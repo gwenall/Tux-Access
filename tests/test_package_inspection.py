@@ -21,7 +21,7 @@ def archive(files):
 
 class PackageInspectionTests(unittest.TestCase):
     def test_inspection_never_runs_maintainer_script_or_extracts_payload(self):
-        control=archive({'control':b'Package: independent-test\nVersion: 1.0\nArchitecture: amd64\n',
+        control=archive({'control':b'Package: independent-test\nVersion: 1.0\nArchitecture: amd64\nPre-Depends: native-helper\nDepends: libc6\n',
                          'postinst':b'#!/bin/sh\nexit 99\n'})
         payload=archive({'usr/share/test.txt':b'fixture data'})
         data=b'!<arch>\n'+member('debian-binary',b'2.0\n')+member('control.tar.xz',control)+member('data.tar.xz',payload)
@@ -30,6 +30,8 @@ class PackageInspectionTests(unittest.TestCase):
             with patch('subprocess.run',side_effect=AssertionError('Package code must not run')):
                 result=inspect_deb(path,hashlib.sha256(data).hexdigest())
             self.assertEqual(result['control']['Package'],'independent-test')
+            self.assertEqual(result['control']['Pre-Depends'],'native-helper')
+            self.assertEqual(result['control']['Depends'],'libc6')
             self.assertEqual(result['maintainer_scripts'],['postinst'])
             self.assertTrue(result['integrity_verified'])
             self.assertEqual(list(Path(directory).iterdir()),[path])

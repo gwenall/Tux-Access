@@ -36,7 +36,8 @@ class Launcher(QtWidgets.QMainWindow):
     def __init__(self, endpoint='tcp://127.0.0.1:5146'):
         super().__init__()
         self.endpoint = endpoint
-        self.products, self.artifacts = [], []
+        from arch_package import installed_products
+        self.products, self.artifacts = installed_products(), []
         self._token = None
         self._refresh_token = None
         self._verified_files = {}
@@ -44,7 +45,7 @@ class Launcher(QtWidgets.QMainWindow):
         self._busy = False
         self._closing = False
         self._cancel = threading.Event()
-        self.setWindowTitle('Native Access Linux — Python proof of concept')
+        self.setWindowTitle('Native Access Linux 0.6 — Python proof of concept')
         screen = QtWidgets.QApplication.primaryScreen()
         available = screen.availableGeometry() if screen else QtCore.QRect(0, 0, 1280, 900)
         self.resize(min(1180, available.width() - 48), min(780, available.height() - 64))
@@ -62,7 +63,7 @@ class Launcher(QtWidgets.QMainWindow):
         for index, (text, method) in enumerate([('Sign in', self.sign_in), ('Connect existing session', self.connect_daemon), ('Import catalog', self.import_catalog),
                              ('Export catalog', self.export_catalog), ('Account catalog', self.account_catalog),
                              ('Artifact metadata', self.artifact_metadata), ('Download artifact', self.choose_download),
-                             ('Inspect package', self.inspect_package)]):
+                             ('Inspect package', self.inspect_package), ('Install Linux package', self.install_linux_package)]):
             button = QtWidgets.QPushButton(text)
             button.clicked.connect(method)
             toolbar.addWidget(button, index // 4, index % 4)
@@ -79,6 +80,7 @@ class Launcher(QtWidgets.QMainWindow):
         self.table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.table.itemSelectionChanged.connect(self.details)
         split.addWidget(self.table)
         self.detail = QtWidgets.QPlainTextEdit()
@@ -89,6 +91,7 @@ class Launcher(QtWidgets.QMainWindow):
         layout.addLayout(progress_row)
         self.progress = QtWidgets.QProgressBar()
         self.progress.setRange(0, 100)
+        self.progress.setFormat('Idle')
         progress_row.addWidget(self.progress, 1)
         self.cancel_button = QtWidgets.QPushButton('Cancel download')
         self.cancel_button.clicked.connect(self._cancel.set)
@@ -97,12 +100,13 @@ class Launcher(QtWidgets.QMainWindow):
         self.status = QtWidgets.QLabel('Sign in to load your account catalog, or import a catalog.')
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
-        limitation = QtWidgets.QLabel('Downloads save verified files. Installation and activation are still being developed.')
+        limitation = QtWidgets.QLabel('Native VST2 installation supports Phasis and Reaktor. NI activation is unverified.')
         limitation.setWordWrap(True)
         layout.addWidget(limitation)
         self._timer = QtCore.QTimer(self)
         self._timer.timeout.connect(self.poll)
         self._timer.start(75)
+        self.render()
 
     def render(self, *_):
         query = self.search.text().casefold()
@@ -140,6 +144,8 @@ class Launcher(QtWidgets.QMainWindow):
         for button in self.actions:
             button.setEnabled(False)
         self.cancel_button.setEnabled(download)
+        self.progress.setRange(0, 100 if download else 0)
+        self.progress.setFormat('%p%' if download else 'Working…')
         self.progress.setValue(0)
         def worker():
             try:
@@ -169,8 +175,16 @@ class Launcher(QtWidgets.QMainWindow):
                                     ('Existing account session available in memory.' if self._token else 'No existing account session available.'))
             elif kind == 'catalog':
                 self.products = catalog_rows(value)
+                account_count = len(self.products)
+                from arch_package import installed_products
+                for native in installed_products():
+                    match = next((p for p in self.products if product_values(p)[0].casefold() == native['title'].casefold()), None)
+                    if match is not None:
+                        match.update(version=native['version'], type=native['type'], status=native['status'])
+                    else:
+                        self.products.append(native)
                 self.render()
-                self.status.setText(f'{len(self.products)} account products loaded.')
+                self.status.setText(f'{account_count} account products loaded · {len(installed_products())} native installations.')
             elif kind == 'login':
                 self._token = value['access_token']
                 self._refresh_token = value.get('refresh_token')
@@ -187,6 +201,8 @@ class Launcher(QtWidgets.QMainWindow):
                 metadata = value['control']
                 lines = [f"Package: {metadata.get('Package', '')}", f"Version: {metadata.get('Version', '')}",
                          f"Architecture: {metadata.get('Architecture', '')}", f"SHA-256: {value['sha256']}",
+                         f"Pre-install requirements: {metadata.get('Pre-Depends', 'none declared')}",
+                         f"Dependencies: {metadata.get('Depends', 'none declared')}",
                          f"Matches verified download: {'yes' if value['integrity_verified'] else 'not checked'}",
                          'Package code executed: no']
                 for elf in value['elf_files']:
@@ -194,9 +210,16 @@ class Launcher(QtWidgets.QMainWindow):
                               'Dependencies: ' + ', '.join(elf.get('needed_libraries', []))]
                 self.detail.setPlainText('\n'.join(lines))
                 self.status.setText('Package inspected. No installation or executable launch performed.')
+            elif kind == 'install':
+                from arch_package import installed_products
+                self.products = installed_products()
+                self.render()
+                self.status.setText(f"{value['title']} {value['version']} files installed. NI activation remains unverified.")
             elif kind == 'error':
                 self.status.setText('Operation failed: ' + value)
             self._busy = False
+            self.progress.setRange(0, 100)
+            self.progress.setFormat('Download verified' if kind == 'download' else 'Idle')
             self.cancel_button.setEnabled(False)
             for button in self.actions:
                 button.setEnabled(True)
@@ -324,6 +347,19 @@ class Launcher(QtWidgets.QMainWindow):
             canonical = str(Path(path).resolve())
             digest = self._verified_files.get(canonical)
             self._run('Inspecting Linux package…', lambda: inspect_deb(canonical, digest), 'package')
+
+    def install_linux_package(self):
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Install verified Linux package', '', 'Debian package (*.deb)')
+        if not path:
+            return
+        canonical = str(Path(path).resolve())
+        digest = self._verified_files.get(canonical)
+        if not digest:
+            self.status.setText('Download this package through the launcher first so its NI checksum can be verified.')
+            return
+        from arch_package import install_verified_vst
+        self._run('Preparing and installing the verified native VST payload…',
+                  lambda: install_verified_vst(canonical, digest), 'install')
 
     def closeEvent(self, event):
         self._cancel.set()

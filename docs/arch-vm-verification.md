@@ -12,7 +12,7 @@ profile. Hardware graphics acceleration was not required.
 
 ## Checks that passed
 
-- All 54 unit tests, including asynchronous Qt workers, private browser callback
+- All 60 unit tests, including asynchronous Qt workers, private browser callback
   delivery, state validation and a mocked HTTPS-relay exchange, passed on Arch.
 - The actual OS app-link dispatch through the registered desktop handler and
   private callback socket passed using a local dummy URI.
@@ -33,6 +33,10 @@ profile. Hardware graphics acceleration was not required.
   5,891,556-byte payload matched the size and SHA-256 in NI's Metalink.
 - Offline package inspection verified its integrity and x86-64 ELF payload.
 - The private WebEngine profile rendered local HTML and executed JavaScript.
+- Native Arch packages installed Phasis and Reaktor VST2 payloads with private
+  exact legacy ABIs. Real Qt installer workers and installed integrity checks
+  passed. Installed Phasis produced finite nonzero audio; Reaktor discovery
+  passed but instrument sound remains unconfirmed. See verification-0.6.md.
 - The WebDAV shared source volume passed host-to-guest and guest-to-host
   write checks. Build environments and caches remain on the guest disk.
 
@@ -50,6 +54,7 @@ virtual-environment instructions in the project README.
 ## Remaining checks
 
 Fresh NI authorization now passes on Arch; token refresh is still unverified.
-The launcher has not installed or activated a product, and the downloaded plug-in has not been
-loaded into a Linux plug-in host. Its legacy OpenSSL dependencies still need
-evaluation. The full Native Access replacement remains incomplete.
+The launcher has installed the two supported native VST2 products, but NI
+activation, Reaktor ensemble playback, custom editors, standalone applications
+and VST3 remain unverified. Expanded installers and Windows compatibility are
+unfinished. The full Native Access replacement remains incomplete.

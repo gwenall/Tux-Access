@@ -50,10 +50,13 @@ def main():
     parser.add_argument('--inspect', choices=('preferences', 'deployments', 'catalog'), help='Read a complete descriptor-backed daemon response as JSON')
     parser.add_argument('--inspect-package', type=Path, help='Inspect a Debian package without executing it')
     parser.add_argument('--expected-sha256', help='Expected package digest from a verified Metalink')
+    parser.add_argument('--build-arch-vst', type=Path, help='Build local Arch packages from a verified NI Linux VST Debian package')
+    parser.add_argument('--compat-libraries', type=Path, help='Directory containing the tested exact legacy shared libraries')
+    parser.add_argument('--output-dir', type=Path, help='Destination for locally generated Arch packages')
     parser.add_argument('--oauth-callback', metavar='URI', help='Deliver a browser callback to a waiting launcher')
     args = parser.parse_args()
     if args.oauth_callback is not None:
-        if args.probe or args.inspect or args.inspect_package or args.export or args.expected_sha256:
+        if args.probe or args.inspect or args.inspect_package or args.export or args.expected_sha256 or args.build_arch_vst or args.compat_libraries or args.output_dir:
             parser.exit(1, 'Browser callbacks cannot be combined with other operations.\n')
         from oauth_callback import forward_callback, CallbackError
         try:
@@ -63,6 +66,21 @@ def main():
         if not delivered:
             parser.exit(1, 'No active browser sign-in is waiting.\n')
         return 0
+    if args.build_arch_vst:
+        if args.probe or args.inspect or args.inspect_package or args.export:
+            parser.error('--build-arch-vst cannot be combined with another operation')
+        if not args.expected_sha256 or not args.compat_libraries or not args.output_dir:
+            parser.error('--build-arch-vst requires --expected-sha256, --compat-libraries and --output-dir')
+        from arch_package import build_arch_vst_packages, InstallationError
+        from package_inspection import PackageError
+        try:
+            result = build_arch_vst_packages(args.build_arch_vst, args.expected_sha256, args.compat_libraries, args.output_dir)
+            print(json.dumps(result, indent=2))
+        except (InstallationError, PackageError, OSError, ValueError) as error:
+            parser.exit(1, 'Local package preparation failed: ' + str(error) + '\n')
+        return 0
+    if args.compat_libraries or args.output_dir:
+        parser.error('--compat-libraries and --output-dir require --build-arch-vst')
     if args.inspect_package:
         if args.inspect or args.probe or args.export:
             parser.error('--inspect-package cannot be combined with daemon query options')

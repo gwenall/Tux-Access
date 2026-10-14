@@ -41,6 +41,7 @@ def _elf(payload):
         if start+size>len(payload):raise PackageError('Invalid ELF section range')
         return payload[start:start+size]
     needed=[]
+    soname=None
     entrypoints=[]
     for section in sections:
         if section[1] not in (6,11):continue
@@ -57,6 +58,7 @@ def _elf(payload):
             for i in range(0,len(raw),16):
                 tag,value=struct.unpack_from(endian+'qQ',raw,i)
                 if tag==1:needed.append(name(value))
+                elif tag==14:soname=name(value)
         else:
             stride=section[9] or 24
             if stride<24 or len(raw)%stride:raise PackageError('Malformed ELF symbol table')
@@ -67,7 +69,7 @@ def _elf(payload):
                 if exported and symbol in ('VSTPluginMain','main','GetPluginFactory','clap_entry'):
                     entrypoints.append(symbol)
     versions=sorted(set(m.group().decode() for m in re.finditer(rb'(?:GLIBC|GLIBCXX|CXXABI)_[0-9]+(?:\.[0-9]+)+',payload)))
-    return {'format':'ELF','bits':64,'machine':machine,'needed_libraries':needed,
+    return {'format':'ELF','bits':64,'machine':machine,'soname':soname,'needed_libraries':needed,
             'plugin_entrypoints':entrypoints,'abi_version_strings':versions}
 
 def inspect_deb(path, expected_sha256=None):
@@ -96,7 +98,7 @@ def inspect_deb(path, expected_sha256=None):
                             for line in text.splitlines():
                                 if ':' in line and not line.startswith((' ','\t')):
                                     field,value=line.split(':',1)
-                                    if field in ('Package','Version','Architecture','Depends','Description','Section'):
+                                    if field in ('Package','Version','Architecture','Pre-Depends','Depends','Recommends','Description','Section'):
                                         report['control'][field]=value.strip()
                         elif key in ('preinst','postinst','prerm','postrm'):
                             report['maintainer_scripts'].append(key)
