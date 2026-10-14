@@ -115,6 +115,25 @@ class InstalledRecordTests(unittest.TestCase):
 
 class InstallerCleanupTests(unittest.TestCase):
     @unittest.skipUnless(__import__('os').name == 'posix', 'POSIX staging required')
+    def test_system_authentication_uses_only_fixed_pacman_command(self):
+        from arch_package import install_verified_vst
+        import subprocess
+        for polkit in (True, False):
+            with self.subTest(polkit=polkit), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                package_path = str(root / 'prepared.pkg.tar.xz')
+                def available(path):
+                    return polkit if str(path) == '/usr/bin/pkexec' else True
+                with patch('arch_package.Path.is_file', available), \
+                     patch('arch_package._private_install_runtime', return_value=root), \
+                     patch('arch_package.build_arch_vst_packages', return_value={'packages': [package_path], 'manifest': {'title': 'fixture'}}), \
+                     patch('arch_package.subprocess.run', return_value=subprocess.CompletedProcess([], 0)) as process:
+                    install_verified_vst('fixture', 'a' * 64, root)
+                expected = ['/usr/bin/pkexec'] if polkit else ['/usr/bin/sudo', '-n']
+                self.assertEqual(process.call_args.args[0], expected + ['/usr/bin/pacman', '-U', '--noconfirm', package_path])
+                self.assertNotIn('shell', process.call_args.kwargs)
+
+    @unittest.skipUnless(__import__('os').name == 'posix', 'POSIX staging required')
     def test_private_package_staging_cleaned_after_success_and_failure(self):
         from arch_package import install_verified_vst
         import subprocess

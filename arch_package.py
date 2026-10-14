@@ -180,8 +180,8 @@ def _private_install_runtime(runtime=None):
 def install_verified_vst(package, expected_sha256, compat_directory=None):
     """Install a verified local payload with pacman, retaining package ownership.
 
-    The GUI uses an existing noninteractive sudo grant. On another machine,
-    denied elevation produces an error instead of reading a password.
+    A desktop with Polkit uses its system authentication dialog. Minimal
+    desktops can use an existing noninteractive sudo grant or the CLI route.
     """
     if not Path('/etc/arch-release').is_file():
         raise InstallationError('Native package installation currently supports Arch Linux only.')
@@ -192,12 +192,14 @@ def install_verified_vst(package, expected_sha256, compat_directory=None):
     with tempfile.TemporaryDirectory(prefix='native-access-install-', dir=runtime) as directory:
         result = build_arch_vst_packages(package, expected_sha256, compat_directory, directory)
         try:
-            completed = subprocess.run(['/usr/bin/sudo', '-n', '/usr/bin/pacman', '-U', '--noconfirm', *result['packages']],
+            elevation = (['/usr/bin/pkexec'] if Path('/usr/bin/pkexec').is_file()
+                         else ['/usr/bin/sudo', '-n'])
+            completed = subprocess.run([*elevation, '/usr/bin/pacman', '-U', '--noconfirm', *result['packages']],
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
         except (OSError, subprocess.SubprocessError):
             raise InstallationError('The native package manager did not complete the installation. Check pacman before retrying.') from None
         if completed.returncode:
-            raise InstallationError('Pacman could not install the packages. Check sudo access, package conflicts and the installation guide.')
+            raise InstallationError('Pacman could not install the packages. Check the system authentication dialog, sudo access, package conflicts and the installation guide.')
         return result['manifest']
 
 

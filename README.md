@@ -1,4 +1,4 @@
-# Native Access Linux — Python proof of concept 0.6
+# Native Access Linux — Python proof of concept 0.6.1
 
 An independent MIT-licensed launcher targeting Arch Linux first. The proof of
 concept stays in Python while the interfaces are established and tested. A
@@ -37,18 +37,23 @@ have not yet been tested. Older CentOS releases may lack suitable Qt wheels.
    PKCE exchange using NI's HTTPS relay redirect. Fresh browser login and
    native token exchange have passed on Arch. Report errors without copying
    codes or tokens.
-2. After sign-in, load Account catalog, then Artifact metadata.
-3. Open Download artifact, filter by product/platform, choose the exact version
-   and a destination folder. The backend resolves a Metalink and verifies the
-   payload size and SHA-256 before publishing the completed file.
+2. After sign-in, load Account catalog. Each product row has Download and Install
+   buttons. Download automatically loads installer metadata and shows only
+   installers matching that product.
+3. Click Download beside Phasis or Reaktor 6, choose its Linux .deb and a
+   destination folder. The backend resolves a Metalink and verifies the payload
+   size and SHA-256 before publishing the completed file. Windows installers
+   can also be downloaded, but their Wine installation is still experimental.
 4. Inspect a downloaded .deb with Inspect package. This reads metadata and ELF
    dependencies without installing the package or running its scripts.
-5. On Arch, Install Linux package supports the inspected Phasis and Reaktor
+5. On Arch, the row's Install button supports the inspected Phasis and Reaktor
    Linux VST2 packages. Prepare the exact compatibility libraries first; see
    [native installation](docs/native-installation.md). The GUI requires an
-   existing noninteractive sudo grant and a package downloaded and verified
-   during that launcher session. Other machines can build the local packages
+   system authentication dialog (Polkit), or an existing noninteractive sudo
+   grant on minimal desktops, and a package downloaded and verified during that
+   launcher session. Other machines can build the local packages
    and install them from a terminal. Installation does not imply activation.
+   VST2 plug-ins appear in a plug-in host such as Carla, not the application menu.
 
 Connect existing session is a reference bridge to a running Windows/macOS NTK
 daemon, default tcp://127.0.0.1:5146. It is useful on the reference machine but

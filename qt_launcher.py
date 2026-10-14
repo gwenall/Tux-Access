@@ -1,4 +1,4 @@
-"""Native Qt proof of concept. Existing-session bridge; no installer execution."""
+"""Native Qt launcher with account downloads and verified Linux installation."""
 import argparse
 import json
 from pathlib import Path
@@ -41,11 +41,13 @@ class Launcher(QtWidgets.QMainWindow):
         self._token = None
         self._refresh_token = None
         self._verified_files = {}
+        self._verified_artifacts = {}
+        self.product_actions = []
         self._events = queue.Queue()
         self._busy = False
         self._closing = False
         self._cancel = threading.Event()
-        self.setWindowTitle('Native Access Linux 0.6 — Python proof of concept')
+        self.setWindowTitle('Native Access Linux 0.6.1 — Python proof of concept')
         screen = QtWidgets.QApplication.primaryScreen()
         available = screen.availableGeometry() if screen else QtCore.QRect(0, 0, 1280, 900)
         self.resize(min(1180, available.width() - 48), min(780, available.height() - 64))
@@ -74,13 +76,14 @@ class Launcher(QtWidgets.QMainWindow):
         layout.addWidget(self.search)
         split = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         layout.addWidget(split, 1)
-        self.table = QtWidgets.QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(['Product', 'Version', 'Type', 'State'])
+        self.table = QtWidgets.QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels(['Product', 'Version', 'Type', 'State', 'Actions'])
         self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.table.itemSelectionChanged.connect(self.details)
         split.addWidget(self.table)
         self.detail = QtWidgets.QPlainTextEdit()
@@ -109,6 +112,7 @@ class Launcher(QtWidgets.QMainWindow):
         self.render()
 
     def render(self, *_):
+        self.product_actions = []
         query = self.search.text().casefold()
         rows = [(i, p) for i, p in enumerate(self.products) if query in product_values(p)[0].casefold()]
         self.table.setRowCount(len(rows))
@@ -117,6 +121,59 @@ class Launcher(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(value)
                 item.setData(QtCore.Qt.ItemDataRole.UserRole, index)
                 self.table.setItem(row, column, item)
+            actions = QtWidgets.QWidget()
+            buttons = QtWidgets.QHBoxLayout(actions)
+            buttons.setContentsMargins(4, 2, 4, 2)
+            for label, callback in (('Download', self.download_product), ('Install', self.install_product)):
+                button = QtWidgets.QPushButton(label)
+                button.setEnabled(not self._busy)
+                button.clicked.connect(lambda checked=False, p=product, action=callback: action(p))
+                button.setToolTip('Choose this product’s authorized installer.' if label == 'Download' else
+                                  ('Install a Linux package verified by this launcher.' if self._native_eligible(product) else
+                                   'Native installation supports Phasis and Reaktor 6; Windows/Wine installation is not available yet.'))
+                buttons.addWidget(button)
+                self.product_actions.append(button)
+            self.table.setCellWidget(row, 4, actions)
+
+    @staticmethod
+    def _title_key(title):
+        return ''.join(c for c in str(title).casefold() if c.isalnum())
+
+    @classmethod
+    def _native_eligible(cls, product):
+        return cls._title_key(product_values(product)[0]) in ('phasis', 'reaktor6', 'reaktor6fx')
+
+    @classmethod
+    def _artifact_matches(cls, artifact, product):
+        if product.get('upid') and str(product['upid']) == str(artifact.upid):
+            return True
+        return cls._title_key(artifact.title) == cls._title_key(product_values(product)[0])
+
+    def download_product(self, product):
+        if self._busy or not self._require_session():
+            return
+        if self.artifacts:
+            self._show_download_picker(product)
+            return
+        from download_catalog import available_artifacts
+        token = self._token
+        self._run('Reading installers for ' + product_values(product)[0] + '…',
+                  lambda: {'artifacts': available_artifacts(token), 'product': product}, 'product_artifacts')
+
+    def install_product(self, product):
+        if self._busy:
+            return
+        if not self._native_eligible(product):
+            self.status.setText('Native installation currently supports Phasis and Reaktor 6. Windows/Wine installation is not available yet; you can download this product’s installer.')
+            return
+        matches = [(path, artifact) for path, artifact in self._verified_artifacts.items()
+                   if self._artifact_matches(artifact, product) and artifact.platform.startswith('linux')
+                   and artifact.target_file.lower().endswith('.deb') and path in self._verified_files]
+        if not matches:
+            self.status.setText('Download this product’s Linux .deb with its Download button first. Install requires a checksum-verified download from this launcher session.')
+            return
+        # Most recently verified matching download; installer rechecks its digest.
+        self._install_verified_path(matches[-1][0])
 
     def details(self):
         item = self.table.item(self.table.currentRow(), 0)
@@ -141,7 +198,7 @@ class Launcher(QtWidgets.QMainWindow):
         self._busy = True
         self._cancel.clear()
         self.status.setText(title)
-        for button in self.actions:
+        for button in self.actions + self.product_actions:
             button.setEnabled(False)
         self.cancel_button.setEnabled(download)
         self.progress.setRange(0, 100 if download else 0)
@@ -161,6 +218,7 @@ class Launcher(QtWidgets.QMainWindow):
                 kind, value = self._events.get_nowait()
             except queue.Empty:
                 break
+            picker_product = None
             if kind == 'progress':
                 current, total = value
                 self.progress.setValue(int(current * 100 / total) if total else 0)
@@ -188,14 +246,20 @@ class Launcher(QtWidgets.QMainWindow):
             elif kind == 'login':
                 self._token = value['access_token']
                 self._refresh_token = value.get('refresh_token')
+                self.artifacts = []
                 self.status.setText('Signed in. Load the account catalog or artifact metadata.')
             elif kind == 'artifacts':
                 self.artifacts = value
                 linux = sum(a.platform.startswith('linux') for a in value)
                 self.status.setText(f'{len(value)} artifact records loaded · {linux} Linux records. Choose Download artifact to inspect targets.')
+            elif kind == 'product_artifacts':
+                self.artifacts = value['artifacts']
+                picker_product = value['product']
             elif kind == 'download':
+                if value.get('artifact') is not None:
+                    self._verified_artifacts[str(Path(value['path']).resolve())] = value['artifact']
                 self.progress.setValue(100)
-                self._verified_files[value['path']] = value['sha256']
+                self._verified_files[str(Path(value['path']).resolve())] = value['sha256']
                 self.status.setText(f"Verified download saved: {value['path']}")
             elif kind == 'package':
                 metadata = value['control']
@@ -212,7 +276,13 @@ class Launcher(QtWidgets.QMainWindow):
                 self.status.setText('Package inspected. No installation or executable launch performed.')
             elif kind == 'install':
                 from arch_package import installed_products
-                self.products = installed_products()
+                for native in installed_products():
+                    match = next((p for p in self.products if self._title_key(product_values(p)[0]) ==
+                                  self._title_key(native['title'])), None)
+                    if match is None:
+                        self.products.append(native)
+                    else:
+                        match.update(version=native['version'], type=native['type'], status=native['status'])
                 self.render()
                 self.status.setText(f"{value['title']} {value['version']} files installed. NI activation remains unverified.")
             elif kind == 'error':
@@ -221,10 +291,12 @@ class Launcher(QtWidgets.QMainWindow):
             self.progress.setRange(0, 100)
             self.progress.setFormat('Download verified' if kind == 'download' else 'Idle')
             self.cancel_button.setEnabled(False)
-            for button in self.actions:
+            for button in self.actions + self.product_actions:
                 button.setEnabled(True)
             if self._closing:
                 self.close()
+            elif picker_product is not None:
+                self._show_download_picker(picker_product)
 
     def connect_daemon(self):
         self._run('Reading existing NTK daemon and account session…', lambda: daemon_snapshot(self.endpoint), 'daemon')
@@ -290,22 +362,35 @@ class Launcher(QtWidgets.QMainWindow):
         if not self._require_session():
             return
         if not self.artifacts:
-            self.status.setText('Load Artifact metadata first.')
+            item = self.table.item(self.table.currentRow(), 0)
+            if item is not None:
+                self.download_product(self.products[item.data(QtCore.Qt.ItemDataRole.UserRole)])
+            else:
+                self.status.setText('Choose a product’s Download button to fetch its installers automatically.')
+            return
+        item = self.table.item(self.table.currentRow(), 0)
+        product = self.products[item.data(QtCore.Qt.ItemDataRole.UserRole)] if item is not None else None
+        self._show_download_picker(product)
+
+    def _show_download_picker(self, product=None):
+        artifacts = [a for a in self.artifacts if product is None or self._artifact_matches(a, product)]
+        if not artifacts:
+            self.status.setText('No authorized installer metadata matched ' + (product_values(product)[0] if product else 'the selected product') + '.')
             return
         dialog = QtWidgets.QDialog(self)
-        dialog.setWindowTitle('Select artifact — files only, no installer execution')
+        dialog.setWindowTitle('Download ' + (product_values(product)[0] if product else 'artifact'))
         dialog.resize(980, 470)
         layout = QtWidgets.QVBoxLayout(dialog)
         search = QtWidgets.QLineEdit()
         search.setPlaceholderText('Filter by product, version, platform or filename')
         layout.addWidget(search)
-        table = QtWidgets.QTableWidget(len(self.artifacts), 5)
+        table = QtWidgets.QTableWidget(len(artifacts), 5)
         table.setHorizontalHeaderLabels(['Product', 'Version', 'Platform', 'Filename', 'Bytes'])
         table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-        for row, artifact in enumerate(self.artifacts):
+        for row, artifact in enumerate(artifacts):
             for column, value in enumerate((artifact.title, artifact.version, artifact.platform, artifact.target_file, artifact.filesize)):
                 table.setItem(row, column, QtWidgets.QTableWidgetItem(str(value)))
         layout.addWidget(table)
@@ -321,7 +406,9 @@ class Launcher(QtWidgets.QMainWindow):
         layout.addWidget(buttons)
         if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted or table.currentRow() < 0:
             return
-        artifact = self.artifacts[table.currentRow()]
+        if table.isRowHidden(table.currentRow()):
+            return
+        artifact = artifacts[table.currentRow()]
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Save verified artifact')
         if not directory:
             return
@@ -337,7 +424,7 @@ class Launcher(QtWidgets.QMainWindow):
             spec = resolve_artifact(artifact, token)
             path = download(spec, directory, cancelled=self._cancel.is_set,
                             progress=lambda current, total: self._events.put(('progress', (current, total))))
-            return {'path': str(path), 'sha256': spec.sha256}
+            return {'path': str(path), 'sha256': spec.sha256, 'artifact': artifact}
         self._run('Resolving and downloading selected artifact…', operation, 'download', download=True)
 
     def inspect_package(self):
@@ -353,6 +440,9 @@ class Launcher(QtWidgets.QMainWindow):
         if not path:
             return
         canonical = str(Path(path).resolve())
+        self._install_verified_path(canonical)
+
+    def _install_verified_path(self, canonical):
         digest = self._verified_files.get(canonical)
         if not digest:
             self.status.setText('Download this package through the launcher first so its NI checksum can be verified.')

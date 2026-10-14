@@ -18,9 +18,14 @@ The installer validates their real ELF SONAMEs, packages them under
 `/usr/lib/native-access-linux/compat-legacy`, and adjusts only the local VST
 copies' library search path. The original downloaded .deb remains intact.
 
-In the GUI, choose Install Linux package and select a .deb downloaded in the
-same launcher session. This path uses an existing `sudo -n` grant. The development
-VM already has that grant. On other machines, use the terminal build route:
+In the GUI, click Download beside Phasis or Reaktor 6 and select the Linux .deb.
+After the download reports that it is verified, click Install on that product's
+row. The global Install Linux package button also accepts a .deb downloaded in
+the same launcher session. With `pkexec` and a running Polkit authentication agent
+(normally included by GNOME/KDE), installation opens the system password dialog.
+The launcher never reads your password. Minimal desktops without `pkexec` use
+an existing `sudo -n` grant; the development VM has that grant. If your desktop
+has no authentication agent, use the terminal build route:
 
 ```sh
 python launcher.py --build-arch-vst ni-phasis_Installer.deb \

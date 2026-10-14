@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "native-access-linux-prototype"
-version = "0.6.0"
+version = "0.6.1"
 readme = "README.md"
 description = "Independent native Linux launcher, NI account catalog adapter and NTK interface"
 requires-python = ">=3.10"
@@ -22,5 +22,5 @@ py-modules = ["launcher", "qt_launcher", "oauth_login", "oauth_browser", "oauth_
 
 [tool.setuptools.data-files]
 "share/native-access-linux" = ["README.md", "ntk_readonly.proto"]
-"share/native-access-linux/docs" = ["docs/native-installation.md", "docs/verification-0.5.md", "docs/verification-0.6.md", "docs/arch-vm-verification.md", "docs/auth-login-debug.md"]
+"share/native-access-linux/docs" = ["docs/native-installation.md", "docs/verification-0.5.md", "docs/verification-0.6.md", "docs/verification-0.6.1.md", "docs/arch-vm-verification.md", "docs/auth-login-debug.md"]
 "share/native-access-linux/tools" = ["tools/prepare_arch_compat.sh", "tools/vst_dsp_probe.py"]
