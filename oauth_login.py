@@ -60,7 +60,8 @@ def login_dialog(parent=None):
             layout.addWidget(buttons)
 
         def start(self):
-            self.view.setUrl(QtCore.QUrl(authorize_url(self.verifier, self.state, APP_REDIRECT)))
+            self.view.setUrl(QtCore.QUrl(authorize_url(
+                self.verifier, self.state, APP_REDIRECT, force_login=True)))
 
         def accept_callback(self, url):
             try:
