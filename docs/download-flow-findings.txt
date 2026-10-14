@@ -1,0 +1,101 @@
+Native Access / NTK download flow — static investigation, 2026-10-14
+
+Boundary
+Inspected installed NTKDaemon.exe at C:\Program Files\Common Files\Native
+Instruments\NTK\NTKDaemon.exe through bounded printable-string scans and
+existing work/daemon-string-candidates.json; reused main-readable-candidates.js.
+No account/auth or download network request was made by this investigator.
+No ntk.json token store, private log, or account token was read.
+The evidence below consists of file-offset string observations. Function
+signatures and adjacent constants suggest connections; call-site/data-flow
+analysis has not yet proven those connections.
+
+Candidate API/download origin
+NTKDaemon.exe embeds api.native-instruments.com at offset 12155408.
+Adjacent defaults: https://auth.native-instruments.com at 12155440;
+ws.nas.native-cloud.com at 12155544. Only the API hostname is a plausible
+download-reference base candidate from this region. The ws hostname should
+not be interpreted as a download origin from its spelling or adjacency.
+Production Electron configuration separately declares API base
+https://api.native-instruments.com in main-readable-candidates.js near 329000.
+No obvious dedicated storage/CDN hostname was found in this bounded ASCII
+domain scan. This is not evidence that one never exists: it may arrive from
+API responses, configuration, runtime concatenation, or packed/non-ASCII data.
+
+Download route literals in NTKDaemon.exe
+13560600 /v2/download{}
+13562400 /v2/download/me/content
+13562424 /v2/download/me/full-products
+13562456 /v2/download/me/updates
+13562480 /v2/download/content/{}
+13562504 /v2/download/full-products/{}
+13562536 /v2/download/updates/{}
+The parent investigation reports live metadata responses with root-relative
+references (three path segments). A concrete candidate interpretation is
+https://api.native-instruments.com/v2/download{reference}, using the
+/v2/download{} literal; an alternative is ordinary origin-relative resolution.
+This distinction requires call-site evidence or a controlled, authenticated
+read of the reference endpoint. Do not silently choose ordinary urljoin solely
+because the metadata field is named url. This sub-investigation did not verify
+either interpretation by a request.
+
+Metalink processing facts/candidates
+13561240 application/metalink4+xml; 13561268 accept.
+These adjacent strings suggest HTTP Accept for Metalink v4, but do not prove
+the exact request code or full headers.
+12205200 source filename deployment\MetalinkDownloader.cpp.
+12205280 function signature MetalinkDownloader::downloadMetalink(string,path).
+12205560 "Unable to retrieve metalink: {}".
+12205592 "Unable to create metalink file: {}".
+12209960 randomized filename pattern %%%%-%%%%-%%%%-%%%%.metalink.
+12211064 "Root folder from metalink: '{}'".
+12202112 message that metalink older than 44 hours is updated; this is a
+static code-message observation, not an executed timer observation.
+12242256 "Unauthorized to download metalink file".
+12242296 "Metalink file was not found".
+12760160 processMetalinkXML(Document) signature in ni::aria2w utilities.
+12760864 processMetalink(filesystem path) signature in ni::aria2w utilities.
+16606960 retained RTTI signature for cloud::sdk::detail::HTTPClient::getMetalink
+taking two string arguments; argument meanings remain unknown.
+17122224 RTTI associates a getMetalink lambda with cpr::Response.
+Together these support a candidate pipeline: cloud SDK obtains Metalink XML,
+daemon saves it locally, aria2 wrapper parses it and downloads payload files.
+They do not establish XML schema details, target-path rules, checksum policy,
+redirect handling, or exact request headers.
+
+Authentication/redirect semantics unresolved
+Generic HTTP-library strings Authorization and Proxy-Authorization are present
+in the existing string inventory; their presence is not attribution to this
+particular endpoint. Unauthorized Metalink errors indicate an authentication
+failure case is represented, but not which credentials or header format it uses.
+No statically verified rule was recovered for forwarding bearer tokens across
+redirects or requesting CDN payload URLs. The independent downloader should
+keep account Authorization tied to the verified NI API origin and should not
+forward it to a different origin based only on an HTTP redirect or Metalink URL.
+That is an independent implementation policy, not observed proprietary behavior.
+
+Configuration inspection boundary
+Public fields only were checked in the two explicit candidate paths
+C:\Users\Public\Documents\Native Instruments\NTK\daemon_config.json and
+C:\ProgramData\Native Instruments\NTK\daemon_config.json. Neither yielded a
+readable existing file in this pass. No broad config/token search was performed.
+
+Reusable private evidence
+work/download-string-evidence.json contains sanitized printable-string hits;
+work/find-download-strings.py and work/download-focused-strings.py record scan
+boundaries and filtering. The parent should preserve installed executable SHA256
+with this report and verify an exact call graph before upgrading candidates to
+observed data flow. No claim of native Linux download/install compatibility.
+
+Runtime corroboration by parent investigator, 2026-10-14
+Root performed an account-authorized metadata-resolution request for Linux
+Phasis. GET API origin + /v2/download + metadata reference with Bearer
+Authorization and Accept application/metalink4+xml returned HTTP 200,
+application/metalink4+xml. The document used Metalink v4 namespace
+urn:ietf:params:xml:ns:metalink and one ni-phasis_Installer.deb file, size
+5891556 bytes, with MD5, SHA-1 and SHA-256 hashes. Its payload URL host was
+artifacts-cdn.native-instruments.com. This corroborates reference assembly
+and successful bearer-authorized resolution for this one existing session.
+It does not establish that bearer auth is the only acceptable mechanism,
+redirect semantics, all products/CDNs, or Linux package usability. No payload
+had been downloaded at the time root reported this resolution evidence.

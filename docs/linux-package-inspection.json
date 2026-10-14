@@ -1,0 +1,441 @@
+{
+  "sha256": "c5efd89b72bd3d8c506c6bd6a25d751e7d8609f1467fd23a30fefb33300b40da",
+  "integrity_verified": true,
+  "control": {
+    "Package": "ni-phasis",
+    "Version": "1.2.1",
+    "Architecture": "amd64",
+    "Section": "sound",
+    "Description": "Native Instruments Phasis"
+  },
+  "maintainer_scripts": [
+    "postinst",
+    "prerm"
+  ],
+  "files": [
+    {
+      "path": "./ni/registry/Phasis.yaml",
+      "size": 118,
+      "mode": 438
+    },
+    {
+      "path": "./usr/lib/vst/Phasis.so",
+      "size": 20110184,
+      "mode": 493
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Drums/Bass Shift.nksfx",
+      "size": 1198,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Drums/Blip Control.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Drums/Boom Box.nksfx",
+      "size": 1196,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Drums/Kashmere Rides.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Drums/Push Back.nksfx",
+      "size": 1196,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Drums/Udu Magic.nksfx",
+      "size": 1196,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Drums/Ultra Modulator.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Drums/Warm Rub.nksfx",
+      "size": 1196,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/2 Wide.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Butter Spread.nksfx",
+      "size": 1206,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Classic Stage.nksfx",
+      "size": 1206,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Classic Stereo.nksfx",
+      "size": 1208,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Dot Spread.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Go Quarter.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/INIT - Phasis.nksfx",
+      "size": 1194,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/In Out.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Liquid Tension.nksfx",
+      "size": 1208,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Modern Classic.nksfx",
+      "size": 1208,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/No Wha.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Paranoid Humanoid.nksfx",
+      "size": 1210,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Small Talk.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Stereo Swirl.nksfx",
+      "size": 1206,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Vibrant.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Keys + Guitars/Wet Lips.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/_DatabaseResources/color/color.db",
+      "size": 114688,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/_DatabaseResources/color/color.meta",
+      "size": 147,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/_DatabaseResources/shortname/.shortname.db-conch",
+      "size": 210,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/_DatabaseResources/shortname/shortname.db",
+      "size": 282624,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/_DatabaseResources/shortname/shortname.meta",
+      "size": 151,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/database/PAL/.categories.db-conch",
+      "size": 195,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/database/PAL/PAL.meta",
+      "size": 135,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/database/PAL/categories.db",
+      "size": 39936,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/image/Phasis/MST_artwork.png",
+      "size": 3877,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/image/Phasis/MST_logo.png",
+      "size": 5233,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/image/Phasis/MST_plugin.png",
+      "size": 19871,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/image/Phasis/OSO_logo.png",
+      "size": 2350,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/image/Phasis/Phasis.meta",
+      "size": 135,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/image/Phasis/VB_artwork.png",
+      "size": 2152,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/PAResources/image/Phasis/VB_logo.png",
+      "size": 1588,
+      "mode": 436
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Auto Pan.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Back Rub.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Behind U.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Bit Crush.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Center Removal.nksfx",
+      "size": 1206,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Dizzy.nksfx",
+      "size": 1198,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Droning.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Ear Plugs.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Gurgler.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Phase Filter.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Robotic Voice.nksfx",
+      "size": 1206,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Special FX/Stab SciFi.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/2 Close.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Crispy Phasis.nksfx",
+      "size": 1206,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Deep Eight.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Emphasis.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Gene Pool.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Gentle Six.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Light Stage.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Ocean Twelve.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Robo Sync.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Slow Phasis.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Space Class.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Stone Cold.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Swirly Trip.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Tiny Tight.nksfx",
+      "size": 1202,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Vocal Touch.nksfx",
+      "size": 1204,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Wanderer.nksfx",
+      "size": 1200,
+      "mode": 509
+    },
+    {
+      "path": "./usr/share/Native Instruments/Phasis/Synths + Pads/Yoy Yoy.nksfx",
+      "size": 1200,
+      "mode": 509
+    }
+  ],
+  "elf_files": [
+    {
+      "format": "ELF",
+      "bits": 64,
+      "machine": 62,
+      "needed_libraries": [
+        "libudev.so.1",
+        "libelf.so.1",
+        "libfreetype.so.6",
+        "libpng16.so.16",
+        "libz.so.1",
+        "libjpeg.so.8",
+        "libxerces-c-3.2.so",
+        "libarchive.so.13",
+        "libsystemd.so.0",
+        "libssl.so.1.1",
+        "libpthread.so.0",
+        "libcrypto.so.1.1",
+        "libdl.so.2",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "plugin_entrypoints": [
+        "VSTPluginMain"
+      ],
+      "abi_version_strings": [
+        "CXXABI_1.3",
+        "CXXABI_1.3.1",
+        "CXXABI_1.3.11",
+        "CXXABI_1.3.3",
+        "CXXABI_1.3.5",
+        "CXXABI_1.3.7",
+        "CXXABI_1.3.8",
+        "CXXABI_1.3.9",
+        "GLIBCXX_3.4",
+        "GLIBCXX_3.4.11",
+        "GLIBCXX_3.4.14",
+        "GLIBCXX_3.4.15",
+        "GLIBCXX_3.4.17",
+        "GLIBCXX_3.4.18",
+        "GLIBCXX_3.4.19",
+        "GLIBCXX_3.4.20",
+        "GLIBCXX_3.4.21",
+        "GLIBCXX_3.4.22",
+        "GLIBCXX_3.4.26",
+        "GLIBCXX_3.4.9",
+        "GLIBC_2.11",
+        "GLIBC_2.12",
+        "GLIBC_2.14",
+        "GLIBC_2.15",
+        "GLIBC_2.17",
+        "GLIBC_2.2.5",
+        "GLIBC_2.25",
+        "GLIBC_2.27",
+        "GLIBC_2.28",
+        "GLIBC_2.29",
+        "GLIBC_2.3",
+        "GLIBC_2.3.2",
+        "GLIBC_2.3.3",
+        "GLIBC_2.3.4",
+        "GLIBC_2.30",
+        "GLIBC_2.4",
+        "GLIBC_2.6",
+        "GLIBC_2.7",
+        "GLIBC_2.8",
+        "GLIBC_2.9"
+      ],
+      "path": "./usr/lib/vst/Phasis.so"
+    }
+  ],
+  "package_code_executed": false
+}

@@ -1,0 +1,73 @@
+// Independently documented wire subset from Native Access 3.26.0.
+// See protocol-findings.txt for source identity and verification boundaries.
+// Unknown protobuf fields are intentionally outside this subset.
+syntax = "proto3";
+package native_access_linux.ntk;
+
+message ProtocolVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+  uint32 micro = 3;
+}
+message Header {
+  ProtocolVersion version = 1;
+  uint64 task_id = 2;
+}
+message ErrorResponse {
+  int32 type = 1;
+  string message = 2;
+}
+message Empty {}
+message DaemonVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+  uint32 micro = 3;
+  string build = 4;
+}
+message ProductVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+  uint32 micro = 3;
+}
+message Component {
+  int32 name = 1;
+  string current_path = 2;
+  bool is_broken = 3;
+}
+message KnownProduct {
+  string upid = 1;
+  bool is_player = 2;
+  string title = 3;
+  ProductVersion installed_version = 4;
+  ProductVersion target_version = 5;
+  uint64 installed_size = 6;
+  bool installed = 7;
+  bool updateable = 8;
+  int32 activation_state = 11;
+  bool is_owned = 12;
+  uint64 target_size = 13;
+  bool is_locatable = 14;
+  bool is_installable = 15;
+  repeated Component components = 16;
+  int32 installation_source = 17;
+  int32 type = 19;
+  bool is_uninstallable = 20;
+  string binary_path = 22;
+  string company = 25;
+  string vendor = 26;
+  repeated string platforms = 28;
+}
+message KnownProducts {
+  repeated KnownProduct known_products = 1;
+}
+message Envelope {
+  Header header = 1;
+  // These fields are not declared oneof: header and response coexist.
+  ErrorResponse error_response = 2;
+  Empty success_response = 3;
+  Empty daemon_ping_request = 7;
+  Empty known_products_request = 47;
+  KnownProducts known_products_response = 48;
+  Empty daemon_version_request = 71;
+  DaemonVersion daemon_version_response = 72;
+}

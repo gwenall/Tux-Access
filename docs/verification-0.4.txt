@@ -1,0 +1,42 @@
+Proof of concept verification — 2026-10-14
+
+Previous goal turn classification: progress. This turn: progress.
+Language preference: remain in Python for a working POC; Rust port afterward.
+
+Verified real NI route:
+GET https://api.native-instruments.com/v2/download + root-relative artifact
+reference, Authorization bearer header, Accept application/metalink4+xml.
+HTTP200 application/metalink4+xml. Namespace urn:ietf:params:xml:ns:metalink.
+One Linux Phasis file, size5891556; hashes md5,sha-1,sha-256; CDN host
+artifacts-cdn.native-instruments.com. No API bearer token is sent to the CDN.
+
+Independent download manager downloaded ni-phasis_Installer.deb,5891556 bytes;
+SHA256 c5efd89b72bd3d8c506c6bd6a25d751e7d8609f1467fd23a30fefb33300b40da
+matched the authenticated NI Metalink. Size/hash rejection, cancellation,
+existing destination preservation, private staging and cleanup tests pass.
+
+Offline package inspection: ni-phasis1.2.1 amd64; ELF VSTPluginMain exported
+by usr/lib/vst/Phasis.so,64-bit x86 ELF machine62. NI resource and registry
+files accompany it. postinst/prerm scripts exist, not executed. The postinst
+uses ni-plugin-info, which has not been reimplemented. ELF DT_NEEDED includes
+libssl.so.1.1/libcrypto.so.1.1 and other libraries listed in the inspection JSON.
+The package was not installed or run in a Linux host.
+
+Native Qt front end: real offscreen rendering inspected visually; live catalog
+search/detail exercised. Mocked worker/account and progress/cancellation tests
+pass. Real GUI worker pipeline passed: existing owned daemon session ->257
+daemon records ->61 account records ->1586 artifacts ->Linux Phasis verified
+download. No token values are displayed or stored. The temporary GUI test
+payload was deleted; the earlier reference package stays privately under work.
+
+Native sign-in dialog: off-the-record profile, exact native callback/state
+validation tested without auth network requests. Fresh NI login, callback
+acceptance by the production service, and refresh remain unverified.
+
+Core unit tests35 pass; Qt worker tests2 pass. Separate offscreen OAuth dialog
+validation and live GUI/download/package inspection scripts passed. No actual
+Arch runtime test has occurred. User will pull the Forgejo source and test.
+
+Remaining goal: fresh Linux sign-in, product/bundle expansion, authorized
+activation, native install/update/uninstall, location settings, queue/resume
+and persistence, actual Linux UI/plug-in-host testing. Full goal is incomplete.

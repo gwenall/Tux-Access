@@ -1,0 +1,89 @@
+Native Access account flow findings — 2026-10-14
+
+Later parent investigation update: a local auth0_access_token_request was made
+against the already-running user session. The returned token was held only in
+process memory to corroborate two read-only NI account API routes. No token
+value was printed/persisted and no fresh login/logout operation was made.
+The account-products endpoint and download-metadata endpoint returned HTTP200;
+details are in protocol-findings.txt version0.3 update. This verifies a current
+session's direct API access, not a fresh Linux login or token refresh.
+Native HTTPS auth transport and refresh preparation are now implemented in
+auth_transport.py. Earlier observations below describe the narrower static
+investigation at the time they were recorded.
+
+Scope: static installed application evidence only. No existing account token
+was queried, no authentication network request was sent, and no account or
+daemon authentication state was changed in this investigation.
+
+Observed JavaScript facts (character offsets in work/main-readable-candidates.js)
+Production public OAuth configuration, at 327938:
+auth origin https://auth.native-instruments.com
+client ID GgcQZ2OCSvzqgVL7RSAoErQRNB9S59kh (public client identifier)
+audience https://api.native-instruments.com
+browser redirect https://na-cloud.native-instruments.com/en/native-access/auth-handler
+embedded window redirect native-access://authorize
+PKCE helper at 371932 generates 32 random bytes, base64url without padding;
+challenge is SHA256(verifier), base64url without padding.
+Authorization URL builder at 372736 uses /authorize, client_id, audience,
+redirect_uri, code_challenge, code_challenge_method=S256,
+scope="openid profile offline_access", response_type=code, noBackButton=true;
+optional prompt=login. This inspected builder does not visibly add OAuth state.
+Login at 373306 passes authCode, codeVerifier, redirectUri to
+daemon auth0Login, then stores access/id token response in application memory.
+Daemon owns refresh/token retrieval through auth0AccessTokenRequest; native
+logout uses auth0LogoutRequest. These operations were not called.
+Callback parser at 380344 accepts code; recognizes access_denied and
+same_email_in_other_profile errors. Embedded redirect filtering at 375815
+checks auth callback and selected provider hostname prefixes, while sanitizing
+URLs and hiding query strings in navigation logging. Independent code uses
+exact origin/callback matching and adds mandatory OAuth state validation.
+Embedded versus external browser login selection is visible near 385871/386290.
+
+Observed embedded protobuf descriptors, outputs/ntk-interface-inventory.json
+Artifact SHA256 e20b3d30b72d6a12e0a37b5fbd1a5c21e0db9e53459b4aab165270f7f739343b
+NTKMessage.proto descriptor offset 12064832; Auth0.proto offset 12104064.
+Envelope 32 auth0_login_request: 1 auth_code string, 2 redirect_uri string,
+3 code_verifier string. Envelope 33 empty auth0_access_token_request.
+Envelope 34 response: 1 access_token string, 2 id_token string.
+Envelope 35 empty auth0_logout_request.
+Envelope 36 device_code_login_request: 1 client_name string.
+Envelope 37 response: 1 user_code, 2 verification_uri, 3 verification_uri_complete
+(strings), 4 poll_interval uint32, 5 http_status uint32, 6 status_message string.
+Envelope 38 empty check_for_access_request; envelope 39 response: 1 http_status
+uint32, 2 status_message string. These describe interfaces, not runtime usage.
+The inspected primary request table at 319691 uses auth0Login; it does not map
+the device-code interfaces. Device-code feature may be unused or another path.
+
+Native daemon candidate strings, work/daemon-string-candidates.json
+13560800 authorization_code; 13560880 /oauth/token;
+13560936 /oauth/device/code; 13560512 /v1/auth/token;
+13560528 /v1/auth/refresh_token; 13560552 /v1/users/me/products.
+These native string offsets are candidate endpoint evidence only: they do not
+establish HTTP method, request encoding, headers, origin pairing, execution,
+account permission, or response semantics.
+
+Independent implementation
+outputs/native-access-linux/account_auth.py uses Python standard library.
+It generates/verifies S256 PKCE, builds observed authorize parameters,
+validates exact callback targets and mandatory state, and prepares observed
+daemon login data without sending it. Optional exchange_code accepts an
+explicit transport callable and constructs a standards-based authorization
+code POST to the observed /oauth/token candidate endpoint. No default network
+transport is present; direct HTTP exchange remains unverified NI behavior.
+The caller-supplied transport must verify TLS, reject redirects, bound response
+size, and avoid credential logging. Functions do not print or persist secrets.
+OAuth state is an independent security design decision; NI redirect-handler
+state preservation is unverified, so end-to-end login is not claimed.
+
+Five tests passed in work/test_account_auth.py: RFC 7636 Appendix B test vector,
+mock HTTP provider exchanges tied to authorization challenge, untrusted or
+ambiguous callbacks rejected, invalid auth origin blocked before transport,
+provider errors redacted. Reference: https://www.rfc-editor.org/rfc/rfc7636
+
+Remaining gaps
+No observed successful fresh login or direct HTTP token exchange; no proof
+the production public client accepts Linux or alternate redirect registration.
+No refresh token implementation or persistence; no NI daemon Linux equivalent.
+No verified device polling, account catalog HTTP schema, installation entitlement
+or license transport. Browser callback integration and user-owned session login
+must be tested explicitly before describing account support as functional.

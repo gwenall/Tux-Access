@@ -1,0 +1,143 @@
+Native Access / NTK read-only protocol investigation — 2026-10-14
+
+Continuation update: version 0.3
+Descriptor codec supports the scalar/message types present in all132 recovered
+message schemas, including five nested types. The codec returns sparse fields;
+unrecognized wire fields are skipped. This is not a claim that every operation
+in the interface has been runtime-tested. Native descriptor queries were
+verified live: full known-products response257, preferences location fields,
+active deployments0. The direct NI account-products request was also verified
+using the reference application's existing session token transiently in memory.
+GET https://api.native-instruments.com/v1/users/me/products?include_subscriptions=true
+returned HTTP200, response_head.status OK, response_body.products61.
+The independent account_api.catalog adapter passed a second live request and
+strips serial numbers; it does not assert installed state for account records.
+
+GET https://api.native-instruments.com/v2/download/me/full-products returned
+HTTP200 with artifacts1586 and unavailable0. The independently implemented
+download_catalog adapter verified all1586 records live. Platform distribution:
+mac483, pc482, nativeos133, all485, linux-x86_64 three. Formats: installer1101,
+iso485. Every observed artifact url field was a root-relative reference,
+not an absolute download URL. Its storage origin and link-resolution process
+remain unresolved; the adapter preserves it and does not fetch packages.
+Artifact repr and public exports omit those references.
+Linux metadata entries: Reaktor6.4.2-beta.4 (Reaktor_6_Installer.deb,19801984),
+Reaktor6.4.3 (Reaktor_6_Installer.deb,19822456), Phasis1.2.1.7
+(ni-phasis_Installer.deb,5891556). These are metadata observations; no support,
+availability, integrity, licensing or runnable Linux behavior is inferred.
+
+Independent account_auth PKCE helpers and auth_transport HTTPS token/refresh
+preparation are added. The production configuration and flow evidence are
+documented in outputs/account-flow-findings.txt. Fresh login and refresh
+remain unverified; no authentication state was changed on the Windows daemon.
+Existing session token values were not printed or persisted. Only account
+catalog response data was retained privately under work; serials are omitted
+from the public backend result. No package download or installation occurred.
+
+Version0.3 validation:29 tests pass, including reference PKCE and protobuf
+fixtures, malformed replies, auth destination/response checks, account data
+sanitization, and artifact platform/reference handling. Previous goal turn:
+progress. Current turn:progress (backend implementations plus new live HTTP
+evidence). Native GUI, fresh login, download integrity, installation and actual
+Linux runtime verification are still incomplete; goal remains active.
+
+Continuation update: version 0.2
+Recovered embedded FileDescriptorProto interface metadata directly from
+NTKDaemon.exe, SHA256
+e20b3d30b72d6a12e0a37b5fbd1a5c21e0db9e53459b4aab165270f7f739343b.
+outputs/ntk-interface-inventory.json contains four descriptor inventories:
+NTKMessage.proto (87 top-level messages), Auth0.proto (4), Events.proto (29),
+Subscription.proto (7), totaling 127. All message/enum type references resolve;
+top-level field numbers are unique per message. This establishes embedded
+interface layout, not implementation behavior or support for every operation.
+Descriptor carrier offsets and lengths are retained in the inventory.
+
+Added KnownProduct binary_path field22 and repeated components field16.
+Component fields are name enum1, current_path string2, is_broken bool3.
+Live read-only verification returned 16 binary paths and 251 components,
+zero marked broken. Product type labels now use the daemon descriptor's enum.
+Three additional tests pass (eight total); version0.2 wheel builds successfully.
+The documented subset is independently presented in ntk_readonly.proto.
+
+Offline printable strings also contain candidate routes /v1/users/me/products,
+/v1/auth/token, /v1/auth/refresh_token, /oauth/token, /oauth/device/code and
+/v2/download/me/content, /v2/download/me/full-products, /v2/download/me/updates.
+String presence alone does not establish API origin, request format, current
+availability, or actual use. No requests were sent to these routes.
+Private offline candidate inventory: work/daemon-string-candidates.json.
+
+Previous goal turn classification: progress (implementation and verified probes).
+Current continuation: progress (interface recovery, decoder updates, verification).
+Remaining objective: native Linux backend account/catalog/download/install
+flows; native GUI and Linux runtime verification; optional later product runtime
+compatibility. Goal remains incomplete. WSL distribution enumeration returned
+E_ACCESSDENIED, so no Linux environment was established by that check.
+
+Evidence and boundary
+Static mapping source: work/main-readable-candidates.js, generated from the
+installed Native Access 3.26.0 packaged main JavaScript. Relevant original
+artifact: work/native-access-static/out/main/index.js. Static source SHA-256
+is recorded in the parent investigation. Character offsets below refer to
+the readable candidate file; this is static evidence, not execution evidence.
+No NI implementation was copied into the independent Python implementation.
+
+Observed static wire mapping
+Protocol version 8.1.4: constant at character offset 317120.
+Envelope encoder at offset 244418; header at 242174; version at 243278.
+Envelope field 1 is header, containing field 1 protocol version and optional
+field 2 uint64 task ID (omitted/zero in the inspected request construction).
+Protocol version fields 1, 2, 3 are uint32 major, minor, micro.
+Envelope field 2 is error response: field1 enum integer, field2 UTF-8 message.
+Envelope field 3 is empty success response.
+
+Read-only request pairs (request mapping at offset 319691):
+daemonPingRequest field7, empty -> successResponse field3, empty.
+daemonVersionRequest field71, empty -> daemonVersionResponse field72.
+knownProductsRequest field47, empty -> knownProductsResponse field48.
+All are protobuf wire type2 (length-delimited embedded messages).
+Daemon version fields: 1 major uint32, 2 minor uint32, 3 micro uint32,
+4 build UTF-8 string (decoder at offset 231778).
+Known-products response field1 is repeated KnownProduct message (189278).
+KnownProduct encoder/decoder begins at 174076. Implemented presentation subset:
+1 upid string; 2 isPlayer bool; 3 title string; 4 installedVersion message;
+5 targetVersion message; 6 installedSize uint64; 7 installed bool;
+8 updateable bool; 11 activationState enum integer; 12 isOwned bool;
+13 targetSize uint64; 14 isLocatable bool; 15 isInstallable bool;
+17 installationSource enum integer; 19 type enum integer;
+20 isUninstallable bool; 25 company string; 26 vendor string;
+28 platforms repeated string. Version submessages are major/minor/micro fields
+1/2/3 uint32. Additional complex product fields remain unimplemented and are
+ignored at protobuf framing level; the result is not a complete schema.
+
+Request transport addresses are observed in constructor at 339522:
+send tcp://127.0.0.1:5146; event subscription tcp://127.0.0.1:5563.
+The Python implementation uses ZeroMQ REQ with one binary protobuf frame.
+REQ framing was initially a transport candidate, then verified against the
+running Windows daemon by the parent investigator with pyzmq 27.2.0.
+
+Observed runtime verification, Windows, 2026-10-14
+ping returned {ok:true}.
+version returned {major:1, minor:32, micro:0, build:" (R0)"}.
+known-products returned 257 records, 251 with installed=true.
+Raw product response stays private under work/probe-products-private.json.
+No session/access token retrieval, auth changes, deployment, download,
+installation, license modification, or daemon shutdown was performed.
+
+Implementation and validation
+outputs/native-access-linux/ntk_protocol.py independently implements bounded
+protobuf parsing, three allowlisted request encoders, response decoding, and
+NtkClient(endpoint='tcp://127.0.0.1:5146', timeout_ms=1500), methods ping(),
+version(), known_products(), close(). Optional dependency pyzmq; codecs use
+Python standard library alone. Only loopback TCP endpoints are accepted.
+Per-request sockets avoid reusing a REQ socket after timeout. Reply size 32 MiB.
+Five unittest cases passed in work/test_ntk_protocol.py: reference request
+bytes, realistic response shapes, malformed wire/bounds, daemon errors and
+major-version mismatch, unsigned integer limits.
+
+Unknowns and portability limits
+No native Linux NTK daemon was found or executed. Linux NTK compatibility,
+transport on Linux, authentication portability, installation mechanisms,
+events, and complete product metadata remain unverified. A Linux launcher
+can use these probes only when a compatible local daemon actually exists.
+Windows runtime success does not establish Linux support. Static protocol
+constants are specific to the inspected Native Access version and may change.

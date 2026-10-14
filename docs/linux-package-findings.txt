@@ -1,0 +1,12 @@
+Linux Phasis reference package inspection — 2026-10-14
+SHA256 c5efd89b72bd3d8c506c6bd6a25d751e7d8609f1467fd23a30fefb33300b40da
+Metalink SHA256 and size verified before inspection. No installation or execution.
+Package: ni-phasis
+Version: 1.2.1
+Architecture: amd64
+Section: sound
+Description: Native Instruments Phasis
+Control script/file: ./postinst (not executed)
+Control script/file: ./prerm (not executed)
+Payload entries 91
+ELF ./usr/lib/vst/Phasis.so; class2, machine62, size20110184

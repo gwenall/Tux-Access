@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "native-access-linux-prototype"
+version = "0.4.0"
+description = "Independent native Linux launcher, NI account catalog adapter and NTK interface"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = ["pyzmq>=27,<28"]
+
+[project.optional-dependencies]
+desktop = ["PySide6>=6.8,<7"]
+
+[project.scripts]
+native-access-linux = "launcher:main"
+
+[tool.setuptools]
+py-modules = ["launcher", "qt_launcher", "oauth_login", "ntk_protocol", "schema_codec", "ntk_schema_data", "account_auth", "auth_transport", "account_api", "download_catalog", "download_manager", "package_inspection"]
+
+[tool.setuptools.data-files]
+"share/native-access-linux" = ["README.rst", "ntk_readonly.proto"]
