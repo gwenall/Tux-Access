@@ -1,21 +1,25 @@
-Native Access Linux — Python proof of concept 0.4
-================================================
+# Native Access Linux — Python proof of concept 0.4
 
 An independent MIT-licensed launcher targeting Arch Linux first. The proof of
 concept stays in Python while the interfaces are established and tested. A
 Rust port follows the working proof of concept. NI software and artwork are
 not included or relicensed.
 
-Install and launch on Arch
--------------------------
-From a normal terminal::
+## Install and launch on Arch
+The native Wayland desktop was tested in an Arch QEMU VM. See
+[Arch VM verification](docs/arch-vm-verification.md) for tested distribution
+packages and results.
 
-    sudo pacman -S python python-pip
-    git clone https://forgejo.my-cloud.me/My-Cloud/native-access.git
-    cd native-access
-    python -m venv .venv
-    .venv/bin/python -m pip install ".[desktop]"
-    .venv/bin/native-access-linux
+From a normal terminal:
+
+```sh
+sudo pacman -S python python-pip
+git clone https://forgejo.my-cloud.me/My-Cloud/native-access.git
+cd native-access
+python -m venv .venv
+.venv/bin/python -m pip install ".[desktop]"
+.venv/bin/native-access-linux
+```
 
 The native desktop uses Qt through PySide6, including WebEngine for sign-in.
 Command-line queries and package inspection work without the desktop extra.
@@ -23,8 +27,7 @@ Ubuntu and CentOS-family systems can use the same virtual-environment steps
 with Python 3.10+ and their distribution's desktop libraries. These distributions
 have not yet been tested. Older CentOS releases may lack suitable Qt wheels.
 
-What to test on Arch
--------------------
+## What to test on Arch
 1. Start the desktop and click Sign in. The embedded browser opens NI's own
    authorization page, catches the registered native redirect, validates state
    and prepares an S256 PKCE code exchange. A fresh NI login remains unverified;
@@ -42,8 +45,7 @@ is not required for the planned native account backend. Linux has no local
 NI daemon in this project. A localhost SSH tunnel can forward a reference
 daemon if desired; the client accepts loopback endpoints only.
 
-Implemented and verified
-------------------------
+## Implemented and verified
 * Native Qt desktop catalog, search, readable details and JSON import/export.
 * Existing-session bridge; account credentials/tokens stay in process memory.
 * Native HTTPS account-catalog and artifact-metadata adapters.
@@ -69,33 +71,32 @@ libssl.so.1.1/libcrypto.so.1.1. It was inspected, not installed or loaded. Three
 catalog artifacts are labeled linux-x86_64 (Phasis and two Reaktor builds);
 this does not establish supported Linux desktop releases or their usability.
 
-Still required
---------------
+## Still required
 Fresh account authorization and callback verification on Arch; expanded product
 catalog/bundle handling; native install/update/uninstall and location handling;
-download resume/queue persistence; authorized product activation; Linux runtime
+download resume/queue persistence; authorized product activation; product runtime
 and plug-in-host testing. Windows-only products may later use an optional Wine
 adapter. The full Native Access replacement is not complete.
 
-CLI and tests
--------------
-From the source directory::
+## CLI and tests
+From the source directory:
 
-    python launcher.py --probe
-    python launcher.py --probe --export catalog.json
-    python launcher.py --inspect preferences
-    python launcher.py --inspect deployments
-    python launcher.py --inspect catalog
-    python launcher.py --inspect-package package.deb --expected-sha256 HASH
-    python -m unittest discover -s tests -v
+```sh
+python launcher.py --probe
+python launcher.py --probe --export catalog.json
+python launcher.py --inspect preferences
+python launcher.py --inspect deployments
+python launcher.py --inspect catalog
+python launcher.py --inspect-package package.deb --expected-sha256 HASH
+python -m unittest discover -s tests -v
+```
 
 Core tests do not contact NI. GUI tests use Qt's offscreen platform and mocks.
 The field inventory can be regenerated with tools/build_schema.py and the
 recovered inventory in docs/ntk-interface-inventory.json. The schema is specific
 to the inspected version; untested operations are not claimed functional.
 
-Architecture
-------------
+## Architecture
 qt_launcher.py orchestrates native widgets and background operations.
 account_auth.py / oauth_login.py / auth_transport.py handle transient login.
 account_api.py and download_catalog.py provide the native HTTP metadata path.

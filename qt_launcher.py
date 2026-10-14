@@ -45,7 +45,9 @@ class Launcher(QtWidgets.QMainWindow):
         self._closing = False
         self._cancel = threading.Event()
         self.setWindowTitle('Native Access Linux — Python proof of concept')
-        self.resize(1180, 780)
+        screen = QtWidgets.QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else QtCore.QRect(0, 0, 1280, 900)
+        self.resize(min(1180, available.width() - 48), min(780, available.height() - 64))
         panel = QtWidgets.QWidget()
         self.setCentralWidget(panel)
         layout = QtWidgets.QVBoxLayout(panel)
