@@ -50,7 +50,19 @@ def main():
     parser.add_argument('--inspect', choices=('preferences', 'deployments', 'catalog'), help='Read a complete descriptor-backed daemon response as JSON')
     parser.add_argument('--inspect-package', type=Path, help='Inspect a Debian package without executing it')
     parser.add_argument('--expected-sha256', help='Expected package digest from a verified Metalink')
+    parser.add_argument('--oauth-callback', metavar='URI', help='Deliver a browser callback to a waiting launcher')
     args = parser.parse_args()
+    if args.oauth_callback is not None:
+        if args.probe or args.inspect or args.inspect_package or args.export or args.expected_sha256:
+            parser.exit(1, 'Browser callbacks cannot be combined with other operations.\n')
+        from oauth_callback import forward_callback, CallbackError
+        try:
+            delivered = forward_callback(args.oauth_callback)
+        except (CallbackError, OSError, ValueError):
+            parser.exit(1, 'Could not deliver the browser authorization callback.\n')
+        if not delivered:
+            parser.exit(1, 'No active browser sign-in is waiting.\n')
+        return 0
     if args.inspect_package:
         if args.inspect or args.probe or args.export:
             parser.error('--inspect-package cannot be combined with daemon query options')

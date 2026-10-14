@@ -1,8 +1,9 @@
 # Arch VM verification
 
-Verified on 2026-10-14 in an x86-64 QEMU development VM with 2 CPUs,
-3 GiB RAM, and software emulation. The desktop uses Weston 15 with its
-pixman renderer and Qt's native Wayland platform.
+Verified on 2026-10-14 in an x86-64 QEMU development VM. Initial checks used
+2 CPUs, 3 GiB RAM and software emulation. Subsequent browser-login checks used
+the user's upgraded VM with 6 CPUs, 8 GiB RAM and WHPX acceleration. The desktop
+uses Weston 15 with its pixman renderer and Qt's native Wayland platform.
 
 Installed packages: Python 3.14.8, PySide6 6.12.0, pyzmq 27.2.0,
 qt6-wayland 6.12.0, qt6-webengine 6.11.2, and DejaVu fonts. Qt WebEngine's
@@ -11,7 +12,14 @@ profile. Hardware graphics acceleration was not required.
 
 ## Checks that passed
 
-- All 37 unit tests, including the asynchronous Qt workers, passed on Arch.
+- All 54 unit tests, including asynchronous Qt workers, private browser callback
+  delivery, state validation and a mocked HTTPS-relay exchange, passed on Arch.
+- The actual OS app-link dispatch through the registered desktop handler and
+  private callback socket passed using a local dummy URI.
+- Firefox 157.0.1 rendered NI's authorization form after clicking Sign in.
+- A user-operated fresh Firefox login returned through NI's relay and the
+  private callback handler. Native token exchange, 61 account products and
+  1,586 artifact records loaded with the Windows session bridge disconnected.
 - The source distribution and Python wheel built on Arch. The wheel installed
   in a virtual environment using Arch's system dependencies; its installed
   CLI reached the reference daemon, desktop modules imported, and README.md
@@ -31,7 +39,7 @@ profile. Hardware graphics acceleration was not required.
 ## Run with Arch packages
 
 ```sh
-sudo pacman -Syu --needed python pyside6 python-pyzmq qt6-wayland qt6-webengine ttf-dejavu
+sudo pacman -Syu --needed python pyside6 python-pyzmq qt6-wayland firefox xdg-utils ttf-dejavu
 cd native-access-linux
 QT_QPA_PLATFORM=wayland python launcher.py
 ```
@@ -41,8 +49,7 @@ virtual-environment instructions in the project README.
 
 ## Remaining checks
 
-Fresh NI authorization and refresh have not yet been confirmed. The verified
-live flow used the reference machine's existing NI session. The launcher has
-not installed or activated a product, and the downloaded plug-in has not been
+Fresh NI authorization now passes on Arch; token refresh is still unverified.
+The launcher has not installed or activated a product, and the downloaded plug-in has not been
 loaded into a Linux plug-in host. Its legacy OpenSSL dependencies still need
 evaluation. The full Native Access replacement remains incomplete.

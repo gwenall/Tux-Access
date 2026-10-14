@@ -1,7 +1,7 @@
 """Independent PKCE preparation. No network I/O without supplied transport.
 
 Public client configuration observed in Native Access 3.26.0. Direct token
-exchange is a standards-based candidate, not verified NI interoperability.
+exchange passed with a fresh user-operated NI browser login on Arch.
 Transient authorization codes, verifiers and tokens are never persisted here.
 """
 import base64
@@ -68,7 +68,10 @@ def callback_code(callback_url, expected_state, redirect_uri=BROWSER_REDIRECT):
     if 'error' in parameters or 'error_description' in parameters:
         raise ValueError('Authorization was not granted')
     state = parameters.get('state', [])
-    if not expected_state or len(state) != 1 or not secrets.compare_digest(state[0], expected_state):
+    if (not isinstance(expected_state, str) or
+            not re.fullmatch(r'[A-Za-z0-9_-]{22,128}', expected_state) or
+            len(state) != 1 or not re.fullmatch(r'[A-Za-z0-9_-]{22,128}', state[0]) or
+            not secrets.compare_digest(state[0], expected_state)):
         raise ValueError('OAuth state mismatch')
     codes = parameters.get('code', [])
     if len(codes) != 1 or not codes[0] or len(codes[0]) > 8192:
@@ -86,11 +89,11 @@ def daemon_login_data(code, verifier, redirect_uri=BROWSER_REDIRECT):
 
 def exchange_code(code, verifier, transport, redirect_uri=BROWSER_REDIRECT,
                   client_id=CLIENT_ID, origin=AUTH_ORIGIN):
-    """Candidate OAuth exchange through transport(method,url,headers,body).
+    """OAuth exchange through transport(method,url,headers,body).
 
     Transport must verify TLS, reject HTTP redirects, avoid sensitive logging,
     bound response size, and return a decoded JSON dictionary. No default HTTP
-    transport is supplied; server acceptance has not been observed.
+    transport is supplied here; the native adapter passed a fresh Arch login.
     """
     data = daemon_login_data(code, verifier, redirect_uri)
     if not isinstance(client_id, str) or not client_id:

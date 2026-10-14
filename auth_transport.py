@@ -1,7 +1,7 @@
 """Native OAuth HTTP transport with bounded responses and redacted errors.
 
-The NI token endpoint is evidenced statically; a fresh NI login still needs
-end-to-end verification. This implementation uses platform TLS verification.
+Fresh browser login and token exchange passed on Arch. This implementation
+uses platform TLS verification. Token refresh remains unverified.
 """
 import json
 import urllib.error

@@ -1,4 +1,4 @@
-"""Native embedded OAuth callback handling; account credentials stay with NI.
+"""Platform OAuth dialogs; account credentials stay with NI.
 
 The registered native redirect is observed in the reference application.
 Actual fresh NI authorization must still be corroborated with user interaction.
@@ -8,6 +8,10 @@ from urllib.parse import urlsplit
 from account_auth import APP_REDIRECT, new_verifier, authorize_url, callback_code
 
 def login_dialog(parent=None):
+    import sys
+    if sys.platform == 'linux':
+        from oauth_browser import browser_login_dialog
+        return browser_login_dialog(parent)
     from PySide6 import QtCore, QtWidgets, QtWebEngineCore, QtWebEngineWidgets
 
     class Page(QtWebEngineCore.QWebEnginePage):
@@ -41,6 +45,7 @@ def login_dialog(parent=None):
             self.verifier = new_verifier()
             self.state = secrets.token_urlsafe(32)
             self.code = None
+            self.redirect_uri = APP_REDIRECT
             layout = QtWidgets.QVBoxLayout(self)
             layout.addWidget(QtWidgets.QLabel('Sign in directly with Native Instruments. This launcher does not read your password.'))
             self.notice = QtWidgets.QLabel('Waiting for authorization…')

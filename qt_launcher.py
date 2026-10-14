@@ -55,7 +55,7 @@ class Launcher(QtWidgets.QMainWindow):
         heading = QtWidgets.QLabel('Native Access Linux')
         heading.setStyleSheet('font-size:26px;font-weight:600')
         layout.addWidget(heading)
-        layout.addWidget(QtWidgets.QLabel('Independent native Python launcher · existing NTK session bridge'))
+        layout.addWidget(QtWidgets.QLabel('Independent native Python launcher · NI account catalog'))
         toolbar = QtWidgets.QGridLayout()
         layout.addLayout(toolbar)
         self.actions = []
@@ -94,10 +94,10 @@ class Launcher(QtWidgets.QMainWindow):
         self.cancel_button.clicked.connect(self._cancel.set)
         self.cancel_button.setEnabled(False)
         progress_row.addWidget(self.cancel_button)
-        self.status = QtWidgets.QLabel('Connect an existing NTK daemon or import a catalog.')
+        self.status = QtWidgets.QLabel('Sign in to load your account catalog, or import a catalog.')
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
-        limitation = QtWidgets.QLabel('Fresh NI sign-in requires validation. Downloads save verified files; installer execution is pending.')
+        limitation = QtWidgets.QLabel('Downloads save verified files. Installation and activation are still being developed.')
         limitation.setWordWrap(True)
         layout.addWidget(limitation)
         self._timer = QtCore.QTimer(self)
@@ -211,24 +211,24 @@ class Launcher(QtWidgets.QMainWindow):
             from oauth_login import login_dialog
             dialog = login_dialog(self)
         except ImportError:
-            self.status.setText('Sign-in requires the Qt WebEngine component; install the desktop extra.')
+            self.status.setText('Sign-in requires Qt desktop components; install the desktop extra.')
             return
         dialog.start()
         if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             dialog.deleteLater()
             return
-        code, verifier = dialog.code, dialog.verifier
+        code, verifier, redirect_uri = dialog.code, dialog.verifier, dialog.redirect_uri
         dialog.code = None
         dialog.verifier = None
         dialog.deleteLater()
-        from account_auth import APP_REDIRECT, exchange_code
+        from account_auth import exchange_code
         from auth_transport import AuthHttpTransport
         self._run('Finishing secure account authorization…',
-                  lambda: exchange_code(code, verifier, AuthHttpTransport(), APP_REDIRECT), 'login')
+                  lambda: exchange_code(code, verifier, AuthHttpTransport(), redirect_uri), 'login')
 
     def _require_session(self):
         if not self._token:
-            self.status.setText('Connect a daemon with an existing account session first. Fresh Linux login is pending.')
+            self.status.setText('Sign in first, or connect an existing account session.')
             return False
         return True
 

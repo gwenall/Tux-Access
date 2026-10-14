@@ -27,6 +27,10 @@ class AuthTests(unittest.TestCase):
   def transport(*args):self.fail('transport called')
   for origin in ('http://auth.native-instruments.com','https://auth.native-instruments.com.evil','https://auth.native-instruments.com@evil','https://auth.native-instruments.com/evil'):
    with self.assertRaises(ValueError):auth.exchange_code('mock','a'*43,transport,origin=origin)
+ def test_unicode_state_is_rejected_cleanly(self):
+  callback=auth.APP_REDIRECT+'?code=mock&state=%C3%A9'
+  with self.assertRaisesRegex(ValueError, '^OAuth state mismatch$'):
+   auth.callback_code(callback,'s'*32,auth.APP_REDIRECT)
  def test_provider_errors_redacted(self):
   with self.assertRaisesRegex(RuntimeError,'^Token exchange failed$'):
    auth.exchange_code('mock','a'*43,lambda *args:{'error':'secret error'})
