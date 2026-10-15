@@ -2,7 +2,14 @@
 # Prepare the exact legacy ABIs used by the two inspected NI Linux VST packages.
 set -eu
 [ -f /etc/arch-release ] || { echo 'This preparation script currently targets Arch Linux.' >&2; exit 1; }
-sudo pacman -S --needed python cmake ninja gcc make patchelf
+if [ "${1:-}" = '--managed' ]; then
+  : # The launcher already prepared the fixed system dependencies.
+elif [ "$#" -eq 0 ]; then
+  sudo pacman -S --needed python cmake ninja gcc make patchelf
+else
+  echo 'Use no argument for terminal setup, or --managed for the launcher.' >&2
+  exit 1
+fi
 stage="${XDG_CACHE_HOME:-$HOME/.cache}/native-access-linux/compat-build"
 prefix="$HOME/.local/lib/native-access-linux/compat-legacy"
 mkdir -p "$stage/downloads" "$prefix/lib"
@@ -28,7 +35,10 @@ if hashlib.sha256(Path('xerces-c-3.2.5.tar.gz').read_bytes()).hexdigest()!=expec
  raise RuntimeError('Apache source checksum mismatch')
 print('Apache source checksum verified.')
 PY
-sudo pacman-key --verify openssl-1.1-1.1.1.w-2-x86_64.pkg.tar.zst.sig openssl-1.1-1.1.1.w-2-x86_64.pkg.tar.zst
+mkdir -p "$stage/keyring-home"
+chmod 700 "$stage/keyring-home"
+gpg --batch --no-options --homedir "$stage/keyring-home" --yes --dearmor --output "$stage/archlinux-keyring.gpg" /usr/share/pacman/keyrings/archlinux.gpg
+gpgv --keyring "$stage/archlinux-keyring.gpg" openssl-1.1-1.1.1.w-2-x86_64.pkg.tar.zst.sig openssl-1.1-1.1.1.w-2-x86_64.pkg.tar.zst
 mkdir -p "$stage/openssl" "$stage/source"
 bsdtar -xf openssl-1.1-1.1.1.w-2-x86_64.pkg.tar.zst -C "$stage/openssl"
 bsdtar -xf xerces-c-3.2.5.tar.gz -C "$stage/source"

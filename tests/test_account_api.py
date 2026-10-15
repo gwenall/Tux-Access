@@ -17,6 +17,16 @@ class AccountApiTests(unittest.TestCase):
                          {'response_head':{'status':'OK'},'response_body':{'products':[1]}}):
             with self.assertRaises(AccountApiError): catalog('token',lambda _:response)
 
+    def test_m32_maschine_entitlement_uses_its_shared_installer_identity(self):
+        response = {'response_head': {'status': 'OK'}, 'response_body': {'products': [
+            {'upid': 'fccc863c-324f-4d79-af7e-b38c1f7488fe',
+             'licensedproduct_title': 'Maschine 2 Essentials Application for M32'},
+            {'upid': 'unrelated', 'licensedproduct_title': 'Maschine 2 Factory Selection'}]}}
+        products = catalog('token', lambda _: response)['products']
+        self.assertEqual(products[0]['title'], 'Maschine 2')
+        self.assertEqual(products[0]['entitlementTitle'], 'Maschine 2 Essentials Application for M32')
+        self.assertEqual(products[1]['title'], 'Maschine 2 Factory Selection')
+
     def test_invalid_tokens_rejected_before_http(self):
         for token in ('','x\r\nInjected: y',None):
             with self.assertRaises(ValueError): http_catalog(token)

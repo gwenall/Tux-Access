@@ -60,14 +60,17 @@ def register_browser_callback():
         raise RuntimeError('Could not register the browser callback launcher.') from None
 
 
-def browser_login_dialog(parent=None, *, opener=None, prepare_handler=None, runtime_dir=None):
+def browser_login_banner(parent=None, *, opener=None, prepare_handler=None, runtime_dir=None, force_login=False):
     from PySide6 import QtCore, QtWidgets
 
-    class Dialog(QtWidgets.QDialog):
+    class Banner(QtWidgets.QFrame):
+        finished = QtCore.Signal(int)
+
         def __init__(self):
             super().__init__(parent)
-            self.setWindowTitle('Sign in to Native Instruments')
-            self.resize(600, 180)
+            self.setObjectName('signInBanner')
+            self._result = 0
+            self._finished = False
             self.verifier = new_verifier()
             self.state = secrets.token_urlsafe(32)
             self.code = None
@@ -83,12 +86,44 @@ def browser_login_dialog(parent=None, *, opener=None, prepare_handler=None, runt
             self.notice = QtWidgets.QLabel('Preparing browser sign-in…')
             self.notice.setWordWrap(True)
             layout.addWidget(self.notice)
-            buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
-            buttons.rejected.connect(self.reject)
-            layout.addWidget(buttons)
+            buttons = QtWidgets.QHBoxLayout()
+            self.retry_button = QtWidgets.QPushButton('Try again')
+            self.retry_button.clicked.connect(self.retry)
+            self.retry_button.hide()
+            buttons.addWidget(self.retry_button)
+            buttons.addStretch()
+            self.cancel_button = QtWidgets.QPushButton('Cancel sign-in')
+            self.cancel_button.clicked.connect(self.reject)
+            buttons.addWidget(self.cancel_button)
+            layout.addLayout(buttons)
             self.timer = QtCore.QTimer(self)
             self.timer.timeout.connect(self.poll_callbacks)
             self.finished.connect(self.cleanup)
+
+        def result(self):
+            return self._result
+
+        def accept(self):
+            self._finish(1)
+
+        def reject(self):
+            self.code = self.verifier = None
+            self._finish(0)
+
+        def _finish(self, result):
+            if self._finished:
+                return
+            self._finished = True
+            self._result = result
+            self.finished.emit(result)
+
+        def retry(self):
+            self.cleanup()
+            self.verifier = new_verifier()
+            self.state = secrets.token_urlsafe(32)
+            self.code = None
+            self.retry_button.hide()
+            self.start()
 
         def start(self):
             try:
@@ -96,30 +131,34 @@ def browser_login_dialog(parent=None, *, opener=None, prepare_handler=None, runt
                 self.receiver.start()
                 self.deadline = time.monotonic() + 7200
                 self.timer.start(75)
-                url = authorize_url(self.verifier, self.state, self.redirect_uri)
+                url = authorize_url(self.verifier, self.state, self.redirect_uri, force_login=force_login)
                 if not (opener or webbrowser.open)(url):
                     raise RuntimeError('No browser opened.')
                 self.notice.setText('Waiting for NI to return to Native Access Linux. Allow your browser to open this application when asked.')
             except (OSError, RuntimeError, webbrowser.Error):
                 self.cleanup()
                 self.notice.setText('Could not open browser sign-in. Check your default browser and try again.')
+                self.retry_button.show()
 
         def poll_callbacks(self):
             if self.deadline is not None and time.monotonic() > self.deadline:
                 self.cleanup()
                 self.notice.setText('Sign-in expired. Cancel and start a new sign-in.')
+                self.retry_button.show()
                 return
             try:
                 callbacks = self.receiver.poll()
             except CallbackError:
                 self.cleanup()
                 self.notice.setText('Could not receive the browser callback. Cancel and retry sign-in.')
+                self.retry_button.show()
                 return
             for uri in callbacks:
                 try:
                     code = callback_code(uri, self.state, APP_REDIRECT)
                 except ValueError:
                     self.notice.setText('NI returned an invalid or declined authorization. Cancel and retry sign-in.')
+                    self.retry_button.show()
                     continue
                 self.code = code
                 self.accept()
@@ -130,7 +169,11 @@ def browser_login_dialog(parent=None, *, opener=None, prepare_handler=None, runt
             self.receiver.close()
 
         def closeEvent(self, event):
-            self.cleanup()
+            self.reject()
             super().closeEvent(event)
 
-    return Dialog()
+    return Banner()
+
+
+# Compatibility for callers of the former factory; it now returns an inline widget.
+browser_login_dialog = browser_login_banner

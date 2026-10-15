@@ -1,3 +1,5 @@
 recursive-include docs *.md *.txt *.json
 recursive-include tools *.py *.sh
+recursive-include tests *.py
+recursive-include assets *.png
 include ntk_readonly.proto

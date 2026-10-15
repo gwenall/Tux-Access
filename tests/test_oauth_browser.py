@@ -69,6 +69,32 @@ class BrowserTests(unittest.TestCase):
         self.assertIsNone(self.dialog.code)
         self.assertFalse((self.runtime / 'native-access-linux-oauth/callback.sock').exists())
 
+    def test_switch_account_requests_fresh_provider_login(self):
+        self.dialog.cleanup()
+        self.dialog = browser_login_dialog(
+            opener=lambda url: self.urls.append(url) or True,
+            prepare_handler=lambda: None, runtime_dir=self.runtime, force_login=True)
+        self.dialog.start()
+        self.assertEqual(parse_qs(urlsplit(self.urls[-1]).query)['prompt'], ['login'])
+
+    def test_browser_open_failure_retries_inline_with_new_state_and_cleans_receiver(self):
+        self.dialog.cleanup()
+        opened = []
+        def opener(url):
+            opened.append(url)
+            return len(opened) > 1
+        self.dialog = browser_login_dialog(
+            opener=opener, prepare_handler=lambda: None, runtime_dir=self.runtime)
+        self.dialog.start()
+        state = self.dialog.state
+        self.assertFalse(self.dialog.retry_button.isHidden())
+        self.assertFalse((self.runtime / 'native-access-linux-oauth/callback.sock').exists())
+        self.dialog.retry_button.click()
+        self.assertNotEqual(self.dialog.state, state)
+        self.assertEqual(len(opened), 2)
+        self.assertTrue(self.dialog.retry_button.isHidden())
+        self.assertTrue((self.runtime / 'native-access-linux-oauth/callback.sock').exists())
+
     def test_desktop_handler_uses_callback_cli_without_embedding_values(self):
         with patch.dict(os.environ, {'XDG_DATA_HOME': self.directory.name}), patch('oauth_browser.subprocess.run') as command:
             command.return_value.returncode = 0

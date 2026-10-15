@@ -74,11 +74,53 @@ XSAVE size 832 bytes. Display and menu settings remain intact. This establishes
 recovery of the VM CPU path, not Kontakt installation or playback. The changed
 copy no longer has the original signature coverage and is not shipped here.
 
+## Original payload placement and standalone demo playback
+
+The observed MSI File/Component/Directory tables and selected runtime directory
+properties produced a plan for 8,134 unique original files (1,940,318,107 bytes),
+with no unresolved entries. The original ZIP digest was rechecked before writing.
+Placement into the isolated WoW64 prefix rejected path escapes, symlink ancestry,
+duplicate destinations and existing files. Each placed file was independently
+SHA-256 compared with its source; a private receipt records those hashes.
+No Windows account, license or activation data was copied. MSI custom actions
+and its uninstall registration have not been reproduced.
+
+Kontakt 8.9.0 standalone opened its normal Demo/Buy/Activate dialog. Its Run Demo
+option and Audio/MIDI settings then opened the main editor. The bundled Piano
+Uno instrument loaded, including its resource editor and on-screen keyboard.
+An ALSA loopback card supplied the otherwise missing VM audio device. A bounded
+in-memory eight-second playback check captured 768,000 S32 samples at 48kHz
+stereo while on-screen keys were pressed: normalized peak 0.04581898 and
+RMS 0.00205412. These establish finite nonzero standalone demo playback; no
+captured audio file was saved. Audio underruns were observed, so this is not
+a real-time performance qualification or physical output test.
+
+The initial experiment used a private legacy prefix. Version 0.7 adds an exact
+managed adapter for the same original Kontakt 8.9.0 ZIP. A fresh install into
+the default `wine-prefixes/kontakt-8` directory initialized WoW64, installed the
+bundled original VC runtime, verified every one of the 8,134 payload files,
+and published the prefix exclusively. The published executable then opened
+Kontakt's main window through the manager's owned Xwayland display. Its process
+environment confirmed the new managed prefix and display `:9`; the earlier
+legacy experiment used a different prefix and display `:8`.
+
+Installation and licensing remain different states; original NI demo limits
+and activation checks remain intact. The launcher prefers the healthy managed
+installation, with guarded read-only detection of the earlier legacy installation
+as a fallback. It does not duplicate Kontakt or copy activation state.
+
+The current 7-Zip package can list all 8,148 files in the official installer,
+including the OFFLINE payload, directly on Linux. This offers a native extraction
+path used by the reproducible managed adapter, avoiding the stalled Windows wrapper.
+Wine bootstrap disables only the optional Mono/Gecko download prompts; an otherwise
+hidden Wine Mono installer had stalled prefix creation on this minimal desktop.
+Normal Kontakt execution keeps its ordinary runtime behavior.
+
 ## Remaining verification
 
-The next checks are complete installed resources/registry records, standalone
-launch, native-host VST3 discovery, editor behavior, legitimate NI activation,
-and MIDI playback with a real instrument. None is inferred from a successful
+The next checks are installer/registry integration, native-host VST3 discovery,
+reliable GUI embedding, legitimate NI activation, external MIDI routing and
+audio performance on physical hardware. None is inferred from a successful
 download or extracted executable. NI binaries and artwork are not distributed
 with this repository.
 

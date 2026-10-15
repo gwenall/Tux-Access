@@ -9,6 +9,10 @@ import urllib.error
 
 ORIGIN = 'https://api.native-instruments.com'
 PRODUCTS_PATH = '/v1/users/me/products?include_subscriptions=true'
+# NI uses the same public installer identity for this keyboard entitlement
+# and the Maschine standalone. Display the application name so its validated
+# installation merges with the account row instead of becoming a duplicate.
+APPLICATION_TITLES = {'fccc863c-324f-4d79-af7e-b38c1f7488fe': 'Maschine 2'}
 
 class AccountApiError(RuntimeError):
     pass
@@ -64,5 +68,8 @@ def catalog(token, transport=http_catalog):
                               ('locked','locked'),('subscribed','subscribed'),('type','accountType')):
             if source in row:
                 product[target]=row[source]
+        if product.get('upid') in APPLICATION_TITLES:
+            product['entitlementTitle'] = product.get('title', '')
+            product['title'] = APPLICATION_TITLES[product['upid']]
         products.append(product)
     return {'products':products}
