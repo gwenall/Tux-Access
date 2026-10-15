@@ -1,4 +1,4 @@
-"""Independent native desktop launcher for the first Linux compatibility milestone."""
+"""Tuxaccess: an independent, unofficial Linux launcher for NI software."""
 from __future__ import annotations
 
 import argparse
@@ -131,6 +131,9 @@ def main():
     except ImportError:
         parser.exit(1, 'Desktop mode requires the desktop extra: pip install ".[desktop]"\n')
     app = QtWidgets.QApplication([])
+    app.setApplicationName('Tuxaccess')
+    app.setApplicationDisplayName('Tuxaccess')
+    app.setDesktopFileName('tuxaccess')
     window = QtLauncher(args.endpoint)
     window.show()
     return app.exec()

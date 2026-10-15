@@ -521,7 +521,7 @@ class ProductActionTests(unittest.TestCase):
             self.assertIn('Not affiliated with, endorsed by, or supported by Native Instruments.', text)
             self.assertIn('MIT license', text)
             self.assertIn('subject to its own licenses', text)
-            self.assertIn('0.9.1', text)
+            self.assertIn('0.9.2', text)
             self.assertIn('prototype', text.casefold())
             self.assertNotIn('200', text)
             self.assertNotIn('private-token', text)

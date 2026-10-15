@@ -1,10 +1,9 @@
 # Sidebar artwork
 
-Credit: fourteen musical Tux illustrations supplied by the user. The original square PNGs are copied unchanged, retaining their transparency; source and bundled file SHA-256 hashes were compared after copying. All fourteen have distinct hashes, so duplicate artwork does not receive extra weight in the random pool.
+Credit: thirteen musical Tux illustrations supplied by the user. The original square PNGs are copied unchanged, retaining their transparency; source and bundled file SHA-256 hashes were compared after copying. The user removed the visually duplicate `tux-flying-v-guitar-headphones.png`; it is no longer in the configured or packaged pool. Different file hashes alone do not establish visually distinct artwork.
 
 | Bundled file | Original filename |
 | --- | --- |
-| `assets/tux/tux-flying-v-guitar-headphones.png` | `ChatGPT Image Oct 15, 2026, 10_21_55 AM-1.png` |
 | `assets/tux/tux-dj-turntables-headphones.png` | `ChatGPT Image Oct 15, 2026, 10_21_56 AM-2.png` |
 | `assets/tux/tux-violin-bow-tie.png` | `ChatGPT Image Oct 15, 2026, 10_21_57 AM-3.png` |
 | `assets/tux/tux-keyboard-player.png` | `ChatGPT Image Oct 15, 2026, 10_21_58 AM-4.png` |
@@ -21,6 +20,6 @@ Credit: fourteen musical Tux illustrations supplied by the user. The original sq
 
 One random image is selected per application process and stays fixed through navigation, filtering, Settings and account changes. A best-effort cache stores only the previous bundled filename at `$XDG_CACHE_HOME/native-access-linux/sidebar-art.txt` (normally `~/.cache/native-access-linux/sidebar-art.txt`) to avoid an immediate repeat. Cache failure never blocks startup. Missing assets leave the sidebar space empty.
 
-The former filenames `tux-01.png` through `tux-08.png` map in order to the first eight descriptive filenames above. Startup translates an old cached name before excluding the previous picture, preserving the no-repeat behavior across this rename without changing a running window's artwork. The source PNG bytes are unchanged.
+The former filenames `tux-01.png` through `tux-08.png` retain their descriptive-name mappings in `LEGACY_ART_NAMES`, including the removed first illustration. Startup translates an old cached name before excluding the previous picture, preserving the no-repeat behavior across this rename without changing a running window's artwork. The remaining source PNG bytes are unchanged.
 
 `sidebar_art.py` locates source assets relative to its module, then falls back to `sys.prefix/share/native-access-linux/assets/tux`. Qt scales with `KeepAspectRatio` and smooth rendering, preserving alpha. The illustration occupies only the former stretch space, shrinks on shorter windows and disappears when that space becomes too small; navigation and account controls retain priority.

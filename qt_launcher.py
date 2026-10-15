@@ -109,7 +109,7 @@ class Launcher(QtWidgets.QMainWindow):
         self._settings_controls = []
         self._options_product = None
         self._inline_artifacts = []
-        self.setWindowTitle('Native Access Linux')
+        self.setWindowTitle('Tuxaccess')
         screen = QtWidgets.QApplication.primaryScreen()
         available = screen.availableGeometry() if screen else QtCore.QRect(0, 0, 1280, 900)
         self.resize(min(1180, available.width() - 48), min(780, available.height() - 64))
@@ -167,7 +167,7 @@ class Launcher(QtWidgets.QMainWindow):
         outer.addWidget(sidebar)
         navigation = QtWidgets.QVBoxLayout(sidebar)
         navigation.setContentsMargins(18, 24, 18, 20)
-        brand = QtWidgets.QLabel('NATIVE ACCESS\nLINUX')
+        brand = QtWidgets.QLabel('Tuxaccess')
         brand.setObjectName('brand')
         navigation.addWidget(brand)
         subtitle = QtWidgets.QLabel('Independent launcher')
@@ -199,7 +199,7 @@ class Launcher(QtWidgets.QMainWindow):
         self.account_status.setWordWrap(True)
         self.account_status.setObjectName('muted')
         navigation.addWidget(self.account_status)
-        version = QtWidgets.QLabel('Python desktop · 0.9.1')
+        version = QtWidgets.QLabel('Python desktop · 0.9.2')
         version.setObjectName('muted')
         navigation.addWidget(version)
         content = QtWidgets.QWidget()
@@ -526,11 +526,11 @@ class Launcher(QtWidgets.QMainWindow):
             page.setObjectName('aboutPage')
             layout = QtWidgets.QVBoxLayout(page)
             layout.setContentsMargins(0, 0, 0, 0)
-            heading = QtWidgets.QLabel('About Native Access Linux')
+            heading = QtWidgets.QLabel('About Tuxaccess')
             heading.setObjectName('title')
             heading.setWordWrap(True)
             layout.addWidget(heading)
-            version = QtWidgets.QLabel('Version 0.9.1 · Independent community prototype')
+            version = QtWidgets.QLabel('Version 0.9.2 · Independent community prototype')
             version.setObjectName('muted')
             layout.addWidget(version)
             contents = QtWidgets.QWidget()
@@ -539,9 +539,10 @@ class Launcher(QtWidgets.QMainWindow):
             paragraphs.setContentsMargins(22, 22, 22, 22)
             paragraphs.setSpacing(20)
             for text in (
-                'An independent, unofficial application created to help bridge the gap in Linux support for Native Instruments software. Linux support has been a recurring request in the NI community for years. This project is a community effort to make compatible software easier to manage on Linux.',
+                'Tuxaccess is an independent, unofficial Linux launcher and product manager for Native Instruments software. It provides an alternative workflow where Native Access 2 is unavailable or does not work on Linux. Linux support has been a recurring request in the NI community for years.',
                 'Not affiliated with, endorsed by, or supported by Native Instruments.',
                 'The launcher is released under the MIT license. Native Instruments software remains subject to its own licenses and account requirements.',
+                'Native Instruments, Native Access and product names belong to their respective owners and are used to identify the software this project works with. Tuxaccess does not grant product licenses or bypass activation.',
                 'This is a prototype. Native Arch and managed Wine workflows cover only qualified products, exact versions and supported configurations. File installation does not establish successful application startup or NI activation. Audio, plug-in and hardware/controller compatibility require separate validation.',
             ):
                 label = QtWidgets.QLabel(text)

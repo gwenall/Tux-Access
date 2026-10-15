@@ -52,7 +52,7 @@ def _archive(path, files, metadata):
 
 def _package_metadata(name, version, description, files, *, dependencies=(), license_name='custom'):
     lines = [f'pkgname = {name}', f'pkgbase = {name}', f'pkgver = {version}',
-             f'pkgdesc = {description}', 'builddate = 0', 'packager = Local Native Access Linux',
+             f'pkgdesc = {description}', 'builddate = 0', 'packager = Local Tuxaccess',
              f'size = {sum(len(data) for data, _ in files.values())}',
              'arch = x86_64', f'license = {license_name}']
     lines.extend('depend = ' + value for value in dependencies)

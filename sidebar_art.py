@@ -15,7 +15,10 @@ LEGACY_ART_NAMES = {
     'tux-07.png': 'tux-flying-v-guitar.png',
     'tux-08.png': 'tux-home-music-studio.png',
 }
-ART_NAMES = tuple(LEGACY_ART_NAMES.values()) + (
+# Keep legacy cache-name translation, including the removed duplicate, while
+# excluding that illustration from the current startup pool.
+ART_NAMES = tuple(name for name in LEGACY_ART_NAMES.values()
+                  if name != 'tux-flying-v-guitar-headphones.png') + (
     'tux-acoustic-guitar-headphones.png',
     'tux-flute-headphones.png',
     'tux-clarinet-headphones.png',

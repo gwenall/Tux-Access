@@ -45,7 +45,7 @@ def register_browser_callback():
     command = (_desktop_quote(sys.executable) + ' ' +
                _desktop_quote(str(Path(__file__).with_name('launcher.py').resolve())) +
                ' --oauth-callback %u')
-    text = ('[Desktop Entry]\nType=Application\nName=Native Access Linux\n'
+    text = ('[Desktop Entry]\nType=Application\nName=Tuxaccess\n'
             'NoDisplay=true\nTerminal=false\nExec=' + command + '\n'
             'MimeType=x-scheme-handler/native-access;\n')
     destination.write_text(text, encoding='utf-8')
@@ -134,7 +134,7 @@ def browser_login_banner(parent=None, *, opener=None, prepare_handler=None, runt
                 url = authorize_url(self.verifier, self.state, self.redirect_uri, force_login=force_login)
                 if not (opener or webbrowser.open)(url):
                     raise RuntimeError('No browser opened.')
-                self.notice.setText('Waiting for NI to return to Native Access Linux. Allow your browser to open this application when asked.')
+                self.notice.setText('Waiting for NI to return to Tuxaccess. Allow your browser to open this application when asked.')
             except (OSError, RuntimeError, webbrowser.Error):
                 self.cleanup()
                 self.notice.setText('Could not open browser sign-in. Check your default browser and try again.')

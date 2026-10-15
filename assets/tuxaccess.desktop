@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Tuxaccess
+Comment=Unofficial Linux launcher for Native Instruments software
+Exec=tuxaccess
+Icon=applications-multimedia
+Terminal=false
+Categories=AudioVideo;Audio;
+Keywords=NI;Wine;music;

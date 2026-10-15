@@ -1,16 +1,54 @@
-# Native Access Linux — Python proof of concept 0.9.1 (development)
+<div align="center">
 
-An independent MIT-licensed launcher targeting Arch Linux first. The proof of
-concept stays in Python while the interfaces are established and tested. A
-Rust port can follow once the product interfaces are stable. NI software and artwork are
-not included or relicensed.
+<img src="assets/tux/tux-violin-bow-tie.png" width="112" alt="Tux playing the violin">
 
-## Install and launch on Arch
-The native Wayland desktop was tested in an Arch QEMU VM. See
-[Arch VM verification](docs/arch-vm-verification.md) for tested distribution
-packages and results.
+# Tuxaccess
 
-From a normal terminal:
+**Your Native Instruments collection, from Linux.**
+
+An independent, unofficial launcher and product manager.
+
+**Python 3.10+ · Qt / PySide6 · Arch Linux first · MIT**
+
+[Get started](#quick-start) · [Current support](#current-support) · [Documentation](#documentation)
+
+</div>
+
+> **🚧 Work in progress — experimental software.**
+>
+> Tuxaccess is an early prototype, not a complete Native Access replacement.
+> Installation, application startup, audio and activation are separate milestones.
+> Support is limited to the products and versions documented below.
+
+![Tuxaccess 0.9.2 showing four local installations on Arch Linux](docs/images/tuxaccess-library.png)
+
+*The actual Qt interface on Arch Linux, showing locally verified files. Sign in
+to load your account catalog. “Installed” does not confirm NI activation or
+successful audio playback.*
+
+## Why Tuxaccess?
+
+Tuxaccess provides an alternative workflow where Native Access 2 is unavailable
+or does not work on Linux. It brings account sign-in, your product catalog,
+downloads and selected installation workflows into a native Linux interface.
+
+- **Your collection in one place.** Sign in through NI's website in your browser;
+  the account catalog loads automatically afterward.
+- **A direct Install action.** Supported products use your saved download and
+  installation settings, with progress, cancellation and retry in the main window.
+- **Collections you can explore.** Open a Komplete collection to see its
+  confirmed components and individual installation options.
+- **Linux and Wine workflows.** Selected native VST2 packages and exact Windows
+  application versions have separate, verified installation paths.
+- **Simple by default, manual when needed.** Embedded Settings, product details
+  and advanced tools expose paths and manual operations without a settings popup.
+- **A little Tux.** One of thirteen musical illustrations welcomes you each
+  session, avoiding an immediate repeat.
+
+## Quick start
+
+The desktop has been tested in an **Arch Linux QEMU VM**. A normal graphical
+session, a browser and Python 3.10 or newer are required.
 
 ```sh
 sudo pacman -S python python-pip firefox xdg-utils
@@ -18,168 +56,117 @@ git clone https://forgejo.my-cloud.me/My-Cloud/native-access.git
 cd native-access
 python -m venv .venv
 .venv/bin/python -m pip install ".[desktop]"
-.venv/bin/native-access-linux
+.venv/bin/tuxaccess
 ```
 
-The native desktop uses Qt through PySide6. Linux sign-in opens your default
-browser and returns through NI's registered `native-access` app link. Install
-a browser and `xdg-utils`; Firefox is tested in the Arch VM. The launcher
-registers a user-local desktop handler when starting sign-in.
-Command-line queries and package inspection work without the desktop extra.
-Ubuntu and CentOS-family systems can use the same virtual-environment steps
-with Python 3.10+ and their distribution's desktop libraries. These distributions
-have not yet been tested. Older CentOS releases may lack suitable Qt wheels.
+1. Open **Settings** and choose your download and Wine-prefix locations.
+2. Click **Sign in**, complete NI's page in your browser and allow it to open
+   **Tuxaccess**. The sign-in banner stays inside the main window.
+3. Find a product and click **Install**. Collections use **View products** first.
+   A product without a supported workflow explains its limitation inline.
+4. Use **Launch** for a supported installed application. To remove a managed
+   installation, select it and use **Uninstall** in its details.
 
-The prototype currently reuses Native Access's observed public OAuth client ID
-and registered redirects. It has no independent NI-issued client registration
-or NI endorsement. A different client ID needs a compatible registration
-accepted by NI's authorization server.
+Some system dependencies require your distribution's authentication dialog.
+Uninstall retains user projects, preferences and other retained prefix data;
+the application shows their location. Existing manual installations are not
+automatically adopted for removal.
 
-## What to test on Arch
-1. Start the desktop and click Sign in. Complete NI's authorization page in
-   your browser, then allow it to open Native Access Linux. Leave the launcher's
-   main window open. Its inline sign-in banner waits for the browser callback,
-   with Cancel and retry controls. It validates the returned state and completes an S256
-   PKCE exchange using NI's HTTPS relay redirect. Fresh browser login and
-   native token exchange have passed on Arch. Report errors without copying
-   codes or tokens.
-2. Your account catalog loads automatically after sign-in. Use search or the
-   All products, Applications, Ready to install and Installed views. Applications
-   includes known bundle applications when the authorized installer catalog
-   supplies their metadata, while excluding libraries and expansions. Installed state comes
-   from verified local files, rather than ownership in the account catalog.
-3. Open the embedded Settings page to choose download and Wine-prefix folders.
-   Click Install beside a supported product. The launcher selects its verified
-   installer, downloads or verifies a cached copy, and installs it using these
-   settings. Progress, cancellation and retry appear in the main window.
-   Collections such as Komplete 13 use View products: the embedded collection
-   page lists their confirmed components and individual installation options.
-   An Install button requires both an account-authorized installer and an
-   available backend. Collection membership alone does not authorize downloads.
-   Unsupported products open their inline options with a visible explanation.
-4. Automatic Arch installation supports Phasis and Reaktor 6 Linux VST2 packages,
-   and exact Kontakt 8.9.0 / Maschine 2.18.4 Windows artifacts through managed Wine prefixes.
-   The launcher prepares required system tools through the system authentication
-   dialog (Polkit), or an existing noninteractive sudo grant on minimal desktops.
-   Native VST2 plug-ins appear in a host such as Carla. Kontakt has a Launch action.
-5. Every uninstalled product row has one Install action. Supported products go
-   straight through the configured workflow; unsupported products report the
-   current limitation inline. Maschine file installation is verified; its main editor/audio startup is still being qualified in the VM.
-   Advanced tools remain available for original downloads, package inspection and manual native
-   installation. Manual mode exposes controls without disabling explicit Install.
-6. Select a qualified managed local installation and use Uninstall in its
-   details. Confirm inside the main window. Only recorded application files
-   are removed; projects, preferences and other prefix state are retained in
-   a dated private directory shown in the footer. Native removal keeps shared
-   dependencies. Existing manual/legacy experiments are not removed by this action.
+Ubuntu and CentOS-family distributions are future targets, **not tested
+platforms**. The Python environment approach is intended to be reusable, but
+system dependencies differ and older releases may lack suitable Qt wheels.
 
-The account initial opens Switch account and Sign out. Settings and About stay
-inside the main window. Fourteen user-supplied musical Tux illustrations use
-descriptive filenames; one is selected for each app process without immediately
-repeating the previous illustration. See [desktop workflow](docs/ui-workflow.md),
-[Wine management](docs/wine-management.md) and
-[native installation](docs/native-installation.md) for details.
+## Current support
 
-Connect existing session is a reference bridge to a running Windows/macOS NTK
-daemon, default tcp://127.0.0.1:5146. It is useful on the reference machine but
-is not required for native Linux sign-in. Linux has no local
-NI daemon in this project. A localhost SSH tunnel can forward a reference
-daemon if desired; the client accepts loopback endpoints only.
+| Area | Verified result and current limit |
+| --- | --- |
+| Account and catalog | Fresh browser login and native HTTPS token exchange passed on Arch. Token refresh remains unverified. |
+| Downloads | Authenticated Metalink resolution, streaming download, size and SHA-256 verification; no general resume/queue persistence yet. |
+| Phasis 1.2.1 | Native VST2 installed and discovered in Carla; numerical audio-processing test passed. Activation and custom editor unverified. |
+| Reaktor 6.4.3 | Native VST2 installed and discovered in Carla. Instrument playback, activation and custom editor unverified. |
+| Kontakt 8.9.0 | Managed Wine installation and standalone startup observed. A prior demo produced measured audio; activation and DAW bridging unqualified. |
+| Maschine 2.18.4 | Managed installation/removal verified. Editor startup still stalls at audio initialization in the test VM. |
+| Massive 1.7 / Controller Editor 2.8.2 | Experimental exact-version profiles. Complete runtime qualification remains pending; Controller Editor is not enabled. |
 
-## Implemented and verified
-* Native Qt desktop catalog, search, readable details and JSON import/export.
-* Existing-session bridge; account credentials/tokens stay in process memory.
-* Native HTTPS account-catalog and artifact-metadata adapters.
-* Protobuf field codec for 132 recovered top-level/nested NTK message definitions.
-* Read-only catalog, preferences and active-deployment queries against NTK.
-* Authenticated Metalink resolution and streaming verified downloads.
-* Download progress/cancellation, private temporary files, existing-file
-  protection and cleanup of rejected/cancelled payloads.
-* Offline Debian package and ELF dependency inspection.
-* Local Arch package conversion, managed native VST2 file installation and
-  installed-record integrity checks for Phasis/Reaktor, including private
-  legacy library ABIs. Real Qt installer workers passed on Arch.
-* Linux system-browser sign-in, private callback delivery and PKCE/state
-  validation. Fresh NI authorization and native token exchange pass on Arch;
-  token refresh remains unverified.
-* Embedded settings, automatic catalog refresh, stable product filters, account
-  menu and supported-product installation using saved paths.
-* Fresh managed Kontakt 8.9.0 Wine-prefix creation, bundled original VC runtime,
-  extraction and verification of all 8,134 original payload files, exclusive
-  prefix publication and standalone launch. Optional local Xwayland support is
-  managed for minimal Wayland desktops. See [Kontakt testing](docs/kontakt-wine-testing.md).
+Native Phasis and Reaktor packages contain **VST2 plug-ins, not standalone
+applications**. An installation record verifies files; it does not establish
+that every product feature, controller or audio host works.
 
-Windows live validation used the installed Native Access 3.26.0 / NTK 1.32.0:
-257 daemon products, 61 account records and 1,586 artifact records. Account and
-daemon catalogs are different representations; account records do not establish
-installed state. The Qt worker path from existing session through catalog,
-artifact metadata and download passed with a real Linux Phasis .deb.
-Its 5,891,556-byte payload matched NI's SHA-256 Metalink digest.
+Product updates, repair, arbitrary installer versions, broad distribution
+support and authorized activation are unfinished. The current source passes
+**208 unit tests on Arch**; this is not a compatibility guarantee for the catalog.
 
-The Phasis package contains a 64-bit x86 ELF VST plug-in with VSTPluginMain,
-plus resources and NI registry metadata. It needs older libraries including
-libssl.so.1.1/libcrypto.so.1.1. Phasis and Reaktor were subsequently installed
-and discovered in Carla on Arch. Installed Phasis also passed a numerical
-audio-processing test; Reaktor's empty default state remained silent even with
-MIDI, so instrument playback is not confirmed. NI activation and custom editors
-are unverified. See [0.6 verification](docs/verification-0.6.md). Three
-catalog artifacts are labeled linux-x86_64 (Phasis and two Reaktor builds);
-this does not establish supported Linux desktop releases or their usability.
+## Independence and ownership
 
-## Still required
-Token refresh verification; broader product catalog/bundle handling;
-expanded native installation, product updates and location handling;
-download resume/queue persistence; authorized product activation; expanded Wine
-product adapters beyond the exact Kontakt/Maschine builds; and further plug-in-host testing. The exact
-Kontakt adapter does not establish support for arbitrary Windows installers.
-VST3 bridging, other Linux distributions and frozen desktop packages remain
-unverified. The full Native Access replacement is not complete.
+Tuxaccess is **not affiliated with, endorsed by, or supported by Native
+Instruments**. Native Instruments, Native Access and product names belong to
+their respective owners and identify the software this project works with.
 
-The development tree also contains an experimental Massive 1.7 coordinator
-profile and a Controller Editor 2.8.2 profile that is not yet enabled. Their
-original artifact/payload fingerprints and unit checks pass; their real
-Install/Launch/Uninstall cycles remain untested. The current source passes
-208 unit tests on Arch; see [development verification](docs/verification-0.9.md).
+The launcher is [MIT-licensed](LICENSE). NI applications remain proprietary,
+subject to their own licenses, account requirements and activation. NI software
+and NI artwork are not included or relicensed. Tuxaccess does not grant product
+licenses or bypass activation. Its name and these notices do not establish
+legal clearance or immunity from claims.
 
-Further adapter expansion is held while evaluating existing compatibility
-infrastructure. [vstenv](https://github.com/dguedry/vstenv), the successor to
-nilinux, already covers substantial Wine, installer and plugin-bridging work.
-Our distinct aim is the independent native NI account/catalog workflow. See the
-[comparison and reuse recommendation](docs/project-comparison.md) and
-[ongoing VM comparison test](docs/vstenv-vm-testing.md). No vstenv implementation
-has been incorporated into this MIT-licensed source tree.
+Sign-in currently reuses Native Access's observed public OAuth client ID and
+registered redirects. Tuxaccess has **no independent NI-issued client
+registration or NI endorsement**. Your password is entered on NI's website;
+account tokens stay in process memory. A different client ID requires a
+compatible registration accepted by NI's authorization server.
 
-## CLI and tests
+## Upgrading from Native Access Linux
+
+Tuxaccess was previously named Native Access Linux. For an existing virtual
+environment with the old distribution installed:
+
+```sh
+.venv/bin/python -m pip uninstall native-access-linux-prototype
+.venv/bin/python -m pip install ".[desktop]"
+.venv/bin/tuxaccess
+```
+
+The old `native-access-linux` command remains an alias. Existing settings,
+download locations, Wine prefixes, installed records and internal data paths
+retain their previous names to preserve installations. The `native-access`
+callback URI remains part of the observed NI sign-in protocol. Historical
+investigation reports also retain the former project name.
+
+## Development
+
+The prototype stays in Python while its behavior and interfaces are tested.
 From the source directory:
 
 ```sh
-python launcher.py --probe
-python launcher.py --probe --export catalog.json
-python launcher.py --inspect preferences
-python launcher.py --inspect deployments
-python launcher.py --inspect catalog
-python launcher.py --inspect-package package.deb --expected-sha256 HASH
-python -m unittest discover -s tests -v
+python launcher.py
+QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -v
 ```
 
-Core tests do not contact NI. GUI tests use Qt's offscreen platform and mocks.
-The field inventory can be regenerated with tools/build_schema.py and the
-recovered inventory in docs/ntk-interface-inventory.json. The schema is specific
-to the inspected version; untested operations are not claimed functional.
+Tests use mocks for account operations and do not contact NI. Optional read-only
+reference queries require a running NTK daemon on a loopback endpoint:
 
-## Architecture
-qt_launcher.py orchestrates native widgets and background operations.
-account_auth.py / oauth_login.py / oauth_browser.py / oauth_callback.py /
-auth_transport.py handle transient login and the private browser callback.
-arch_package.py prepares local Arch packages and verifies installed NI payloads
-and compatibility libraries. NI binaries are provided by each user's download.
-account_api.py and download_catalog.py provide the native HTTP metadata path.
-app_settings.py persists paths and preferences; install_coordinator.py selects
-verified workflows. wine_manager.py owns the tested Kontakt prefix lifecycle;
-wine_display.py supplies an owned local Xwayland display where required.
-download_manager.py resolves Metalinks and downloads verified payloads without
-forwarding bearer tokens to the CDN. package_inspection.py reads Debian/ELF
-metadata. ntk_protocol.py and schema_codec.py support the reference bridge.
-Evidence and runtime limitations are recorded under docs/.
+```sh
+python launcher.py --probe
+python launcher.py --inspect catalog
+python launcher.py --inspect preferences
+python launcher.py --inspect-package package.deb --expected-sha256 HASH
+```
 
-The left sidebar uses eight user-supplied Tux music illustrations. One is selected at startup and stays fixed for that session. See [sidebar artwork](docs/sidebar-art.md).
+The reference bridge is a development aid, **not required for Linux browser
+sign-in**. There is no native Linux NI daemon implementation in this project.
+
+Further expansion of our own Wine adapters is held while evaluating reuse of
+[vstenv](https://github.com/dguedry/vstenv). It already covers substantial Wine,
+installer and plugin-bridging infrastructure. Our distinct aim is the independent
+Linux account/catalog workflow. No vstenv implementation has been incorporated
+into this MIT-licensed source tree.
+
+## Documentation
+
+| Read about | Guide |
+| --- | --- |
+| Interface and product actions | [Desktop workflow](docs/ui-workflow.md) · [Collections](docs/bundle-workflow.md) |
+| Installation and compatibility | [Native VST2 installation](docs/native-installation.md) · [Wine management](docs/wine-management.md) · [Kontakt testing](docs/kontakt-wine-testing.md) |
+| Test environment and evidence | [Arch VM verification](docs/arch-vm-verification.md) · [Development verification](docs/verification-0.9.md) · [Tuxaccess 0.9.2](docs/verification-0.9.2.md) |
+| Authentication and interfaces | [Browser sign-in investigation](docs/auth-login-debug.md) · [Protocol findings](docs/protocol-findings.txt) |
+| Existing projects and reuse | [Project comparison](docs/project-comparison.md) · [VM comparison notes](docs/vstenv-vm-testing.md) |
+| Packaging and artwork | [Language and packaging](docs/language-and-packaging.md) · [Sidebar artwork](docs/sidebar-art.md) |
