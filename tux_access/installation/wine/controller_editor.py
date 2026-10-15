@@ -1,6 +1,6 @@
 """Qualified exact original Controller Editor 2.8.2 application profile."""
-from controller_282_plan import load_plan, load_hashes, PLAN_SHA256, HASHES_SHA256
-from ni_application_manager import (ApplicationProfile, BundledRuntime, InstallerArtifact,
+from tux_access.installation.plans.controller_282 import load_plan, load_hashes, PLAN_SHA256, HASHES_SHA256
+from tux_access.installation.wine.application import (ApplicationProfile, BundledRuntime, InstallerArtifact,
                                     NiApplicationManager, PublicRegistryValue)
 
 ZIP_SIZE = 59011192

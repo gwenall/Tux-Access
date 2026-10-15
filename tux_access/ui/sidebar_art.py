@@ -4,6 +4,7 @@ from pathlib import Path
 import secrets
 import sys
 import tempfile
+from importlib.resources import files
 
 LEGACY_ART_NAMES = {
     'tux-01.png': 'tux-flying-v-guitar-headphones.png',
@@ -32,9 +33,11 @@ _startup_art = _UNSET
 
 def find_artwork(source_directory=None, prefix=None):
     """Work from a source tree or installed data files, independently of cwd."""
-    source = Path(source_directory) if source_directory is not None else Path(__file__).resolve().parent
+    source = Path(source_directory) if source_directory is not None else None
     prefix = Path(prefix) if prefix is not None else Path(sys.prefix)
-    for directory in (source / 'assets/tux', prefix / 'share/native-access-linux/assets/tux'):
+    directories = ((source / 'assets/tux',) if source is not None else
+                   (files('tux_access.resources') / 'artwork',))
+    for directory in (*directories, prefix / 'share/native-access-linux/assets/tux'):
         available = tuple(directory / name for name in ART_NAMES if (directory / name).is_file())
         if available:
             return available

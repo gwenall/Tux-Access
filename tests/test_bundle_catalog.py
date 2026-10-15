@@ -1,9 +1,9 @@
 import unittest
 
-from application_catalog import expand_catalog
-from bundle_catalog import bundle_members, is_bundle, member_identities
-from download_catalog import Artifact
-from ntk_protocol import _product, message_field, varint
+from tux_access.catalog.applications import expand_catalog
+from tux_access.catalog.bundles import bundle_members, is_bundle, member_identities
+from tux_access.downloads.catalog import Artifact
+from tux_access.protocol.ntk import _product, message_field, varint
 
 K13 = {'upid': 'a3f6622b-00c5-49af-bb0d-2a5ec004e91c', 'title': 'KOMPLETE 13'}
 PHASIS = '90f226a1-3cad-4bd7-a047-fc0609afcbab'

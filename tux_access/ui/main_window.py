@@ -6,12 +6,12 @@ from pathlib import Path
 import queue
 import threading
 from PySide6 import QtCore, QtGui, QtWidgets
-from launcher import catalog_rows, product_values
+from tux_access.catalog.products import catalog_rows, product_values
 
 
 def daemon_snapshot(endpoint):
-    from ntk_protocol import NtkClient, PROTOCOL_VERSION
-    from schema_codec import encode, decode
+    from tux_access.protocol.ntk import NtkClient, PROTOCOL_VERSION
+    from tux_access.protocol.codec import encode, decode
     client = NtkClient(endpoint=endpoint, timeout_ms=3000)
     try:
         client.ping()
@@ -37,7 +37,7 @@ class SidebarArtwork(QtWidgets.QLabel):
     """Use only the sidebar's spare stretch space; never impose image height."""
     def __init__(self, parent=None):
         super().__init__(parent)
-        from sidebar_art import startup_artwork
+        from tux_access.ui.sidebar_art import startup_artwork
         self.source_path = startup_artwork()
         self._original = QtGui.QPixmap(str(self.source_path)) if self.source_path else QtGui.QPixmap()
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
@@ -70,7 +70,7 @@ class SidebarArtwork(QtWidgets.QLabel):
 class Launcher(QtWidgets.QMainWindow):
     def __init__(self, endpoint='tcp://127.0.0.1:5146'):
         super().__init__()
-        from app_settings import load_settings, default_settings, SettingsError
+        from tux_access.settings import load_settings, default_settings, SettingsError
         settings_warning = None
         try:
             self.settings = load_settings()
@@ -431,7 +431,7 @@ class Launcher(QtWidgets.QMainWindow):
         self.pages.setCurrentWidget(self._bundle_page)
 
     def _bundle_reason(self, product):
-        from bundle_catalog import is_bundle
+        from tux_access.catalog.bundles import is_bundle
         if is_bundle(product):
             return self._unsupported_reason(product)
         if self._installed_locally(product):
@@ -445,9 +445,9 @@ class Launcher(QtWidgets.QMainWindow):
     def _render_bundle(self):
         if self._bundle_page is None:
             return
-        from bundle_catalog import bundle_members
-        from bundle_catalog import is_bundle
-        from application_backends import wine_spec
+        from tux_access.catalog.bundles import bundle_members
+        from tux_access.catalog.bundles import is_bundle
+        from tux_access.installation.backends import wine_spec
         selected = self.bundle_table.item(self.bundle_table.currentRow(), 0)
         selected_key = selected.data(QtCore.Qt.ItemDataRole.UserRole) if selected else None
         self._bundle_actions = []
@@ -590,13 +590,13 @@ class Launcher(QtWidgets.QMainWindow):
 
     @classmethod
     def _installation_key(cls, product):
-        from application_catalog import APPLICATIONS
+        from tux_access.catalog.applications import APPLICATIONS
         identity = APPLICATIONS.get(product.get('upid'))
         key = cls._title_key(identity[0] if identity else product_values(product)[0])
         return {'kontakt8player': 'kontakt8', 'reaktor6fx': 'reaktor6'}.get(key, key)
 
     def _application(self, product):
-        from application_catalog import is_application
+        from tux_access.catalog.applications import is_application
         return is_application(product) or (product.get('backend') == 'wine' and self._installed_locally(product))
 
     def _canonical_local_record(self, product):
@@ -608,7 +608,7 @@ class Launcher(QtWidgets.QMainWindow):
     def _removal_available(self, product):
         if product is None or not self._installed_locally(product):
             return False
-        from removal_coordinator import can_uninstall
+        from tux_access.installation.remove import can_uninstall
         record = self._canonical_local_record(product)
         known = any(self._installation_key(local) == self._installation_key(product)
                     and local.get('prefix') == record.get('prefix')
@@ -680,7 +680,7 @@ class Launcher(QtWidgets.QMainWindow):
         target = self._pending_uninstall
         self._pending_uninstall = None
         self.uninstall_panel.hide()
-        from removal_coordinator import can_uninstall, uninstall_product
+        from tux_access.installation.remove import can_uninstall, uninstall_product
         record, settings = target['record'], self.settings
         if not can_uninstall(record, settings):
             self.status.setText('This installation no longer qualifies for safe removal. Refresh the library before trying again.')
@@ -701,14 +701,14 @@ class Launcher(QtWidgets.QMainWindow):
         return next((product for product in self.products if self._product_key(product) == key), None)
 
     def _supported(self, product):
-        from bundle_catalog import is_bundle
+        from tux_access.catalog.bundles import is_bundle
         if is_bundle(product):
             return False
-        from install_coordinator import can_install
+        from tux_access.installation.install import can_install
         return can_install(product, self.settings)
 
     def refresh_local_installations(self):
-        from install_coordinator import installed_catalog
+        from tux_access.installation.install import installed_catalog
         settings = self.settings
         self._run('Checking local installation files…', lambda: installed_catalog(settings), 'local_catalog')
 
@@ -720,8 +720,8 @@ class Launcher(QtWidgets.QMainWindow):
         return 'installed' in state and 'not installed' not in state and (bool(local) or 'activation unverified' in state)
 
     def render(self, *_):
-        from application_backends import wine_spec
-        from bundle_catalog import is_bundle
+        from tux_access.installation.backends import wine_spec
+        from tux_access.catalog.bundles import is_bundle
         self.product_actions = []
         query = self.search.text().casefold()
         selected = self.table.item(self.table.currentRow(), 0)
@@ -850,13 +850,13 @@ class Launcher(QtWidgets.QMainWindow):
         if self.artifacts:
             self._show_download_picker(product)
             return
-        from download_catalog import available_artifacts
+        from tux_access.downloads.catalog import available_artifacts
         token = self._token
         self._run('Reading installers for ' + product_values(product)[0] + '…',
                   lambda: {'artifacts': available_artifacts(token), 'product': product}, 'product_artifacts')
 
     def install_product(self, product):
-        from bundle_catalog import is_bundle
+        from tux_access.catalog.bundles import is_bundle
         if is_bundle(product):
             self.show_bundle(product)
             return
@@ -867,7 +867,7 @@ class Launcher(QtWidgets.QMainWindow):
             return
         if not self._require_session():
             return
-        from install_coordinator import install_product
+        from tux_access.installation.install import install_product
         token, settings, artifacts = self._token, self.settings, list(self.artifacts)
         self._active_product = product
         def operation():
@@ -883,7 +883,7 @@ class Launcher(QtWidgets.QMainWindow):
                                     'message': message}))
 
     def _post_install_scan(self, result, settings):
-        from install_coordinator import installed_catalog
+        from tux_access.installation.install import installed_catalog
         try:
             result['_installed'] = installed_catalog(settings)
         except Exception as error:
@@ -893,7 +893,7 @@ class Launcher(QtWidgets.QMainWindow):
         return result
 
     def details(self):
-        from bundle_catalog import is_bundle
+        from tux_access.catalog.bundles import is_bundle
         product = self._selected_product()
         self.product_options_button.setText('View products' if product is not None and is_bundle(product) else 'Installation options')
         self.product_options_button.setEnabled(product is not None and not self._busy and self._login_banner is None)
@@ -927,14 +927,14 @@ class Launcher(QtWidgets.QMainWindow):
             self.detail.setPlainText('\n'.join(lines))
 
     def _unsupported_reason(self, product):
-        from bundle_catalog import is_bundle
+        from tux_access.catalog.bundles import is_bundle
         title = product_values(product)[0]
         if is_bundle(product):
             return title + ' is a collection with no single application installer. Choose View products to inspect its confirmed members and install individual supported products.'
         return title + ' installation is not available yet. Supported workflows are Phasis, Reaktor 6, Kontakt 8.9.0, Maschine 2.18.4 and Massive 1.7.0. Advanced tools provides manual downloads and inspection.'
 
     def open_selected_options(self):
-        from bundle_catalog import is_bundle
+        from tux_access.catalog.bundles import is_bundle
         product = self._selected_product()
         if product is not None and not self._busy:
             if is_bundle(product):
@@ -1053,12 +1053,12 @@ class Launcher(QtWidgets.QMainWindow):
                 self._events.put((kind, operation()))
             except Exception as error:
                 # HTTP errors from adapters are redacted; never show token values.
-                from download_manager import DownloadCancelled
+                from tux_access.downloads.manager import DownloadCancelled
                 event_kind = 'cancelled' if isinstance(error, DownloadCancelled) or self._cancel.is_set() else 'error'
                 message = self._safe_message(str(error), credentials)
                 if kind == 'uninstall':
                     try:
-                        from install_coordinator import installed_catalog
+                        from tux_access.installation.install import installed_catalog
                         records = installed_catalog(self.settings)
                     except Exception:
                         records = None
@@ -1325,7 +1325,7 @@ class Launcher(QtWidgets.QMainWindow):
             self.sign_in_area.show()
             return
         try:
-            from oauth_login import login_banner
+            from tux_access.auth.login import login_banner
             banner = login_banner(self, force_login=bool(self._token))
         except ImportError:
             self.status.setText('Sign-in requires Qt desktop components; install the desktop extra.')
@@ -1361,8 +1361,8 @@ class Launcher(QtWidgets.QMainWindow):
         if result != 1 or not code or not verifier:
             self.status.setText('Sign-in cancelled. Your existing session is unchanged.' if self._token else 'Sign-in cancelled.')
             return
-        from account_auth import exchange_code
-        from auth_transport import AuthHttpTransport
+        from tux_access.auth.oauth import exchange_code
+        from tux_access.auth.transport import AuthHttpTransport
         self._run('Finishing secure account authorization…',
                   lambda: exchange_code(code, verifier, AuthHttpTransport(), redirect_uri), 'login')
 
@@ -1377,15 +1377,15 @@ class Launcher(QtWidgets.QMainWindow):
             self.refresh_local_installations()
             return
         if self._require_session():
-            from account_api import catalog
-            from install_coordinator import installed_catalog
+            from tux_access.auth.api import catalog
+            from tux_access.installation.install import installed_catalog
             token, settings = self._token, self.settings
             def operation():
                 result = {'catalog': catalog(token), 'installed': installed_catalog(settings)}
                 self._events.put(('catalog_ready', dict(result)))
                 try:
-                    from download_catalog import available_artifacts
-                    from application_catalog import expand_catalog
+                    from tux_access.downloads.catalog import available_artifacts
+                    from tux_access.catalog.applications import expand_catalog
                     artifacts = available_artifacts(token)
                     expanded = expand_catalog(result['catalog'], artifacts)
                     result.update(catalog=expanded, artifacts=artifacts)
@@ -1396,7 +1396,7 @@ class Launcher(QtWidgets.QMainWindow):
                 result['metadata_ready'] = True
                 self._events.put(('catalog_ready', dict(result)))
                 try:
-                    from account_profile import profile
+                    from tux_access.auth.profile import profile
                     result['profile'] = {key: value for key, value in profile(token).items()
                                          if key in ('name', 'given_name') and isinstance(value, str)}
                 except Exception:
@@ -1407,7 +1407,7 @@ class Launcher(QtWidgets.QMainWindow):
                       'catalog', retry=self.account_catalog)
 
     def wine_diagnostics(self):
-        from wine_manager import WineManager
+        from tux_access.installation.wine.kontakt import WineManager
         settings = self.settings
         self._run('Checking Wine and managed installation requirements…', lambda: WineManager(settings).diagnose(),
                   'wine_diagnostics', retry=self.wine_diagnostics)
@@ -1424,7 +1424,7 @@ class Launcher(QtWidgets.QMainWindow):
             self.status.setText('No verified local application is available to launch.')
             return
         record = self._canonical_local_record(record)
-        from application_backends import wine_spec
+        from tux_access.installation.backends import wine_spec
         spec = wine_spec(record)
         if spec is None:
             self.status.setText('Launch is not available for ' + product_values(record)[0] + '. No qualified application profile matches this installation.')
@@ -1435,7 +1435,7 @@ class Launcher(QtWidgets.QMainWindow):
 
     def artifact_metadata(self):
         if self._require_session():
-            from download_catalog import available_artifacts
+            from tux_access.downloads.catalog import available_artifacts
             token = self._token
             self._run('Reading authorized artifact metadata…', lambda: available_artifacts(token), 'artifacts')
 
@@ -1443,7 +1443,7 @@ class Launcher(QtWidgets.QMainWindow):
         """Edit non-secret preferences inside the main window."""
         self.cancel_uninstall_confirmation(announce=False)
         from dataclasses import replace
-        from app_settings import save_settings, validate_settings
+        from tux_access.settings import save_settings, validate_settings
         if not isinstance(product, dict):
             product = None
         if self._settings_page is not None and self.pages.currentWidget() == self._settings_page:
@@ -1623,11 +1623,11 @@ class Launcher(QtWidgets.QMainWindow):
     def load_inline_installers(self):
         if self._busy or self._options_product is None or not self._require_session():
             return
-        from download_catalog import available_artifacts
+        from tux_access.downloads.catalog import available_artifacts
         token = self._token
         product = self._options_product
         def operation():
-            from download_manager import DownloadCancelled
+            from tux_access.downloads.manager import DownloadCancelled
             artifacts = available_artifacts(token)
             if self._cancel.is_set():
                 raise DownloadCancelled('Installer lookup cancelled')
@@ -1681,7 +1681,7 @@ class Launcher(QtWidgets.QMainWindow):
             if product is not None:
                 self.download_product(product)
             else:
-                from download_catalog import available_artifacts
+                from tux_access.downloads.catalog import available_artifacts
                 token = self._token
                 self._run('Reading authorized installer choices…',
                           lambda: {'artifacts': available_artifacts(token), 'product': None},
@@ -1736,7 +1736,7 @@ class Launcher(QtWidgets.QMainWindow):
         """Shared action for the picker and the end-to-end GUI verification."""
         if not self._require_session():
             return
-        from download_manager import resolve_artifact, download
+        from tux_access.downloads.manager import resolve_artifact, download
         token = self._token
         def operation():
             spec = resolve_artifact(artifact, token)
@@ -1749,7 +1749,7 @@ class Launcher(QtWidgets.QMainWindow):
     def inspect_package(self):
         path, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Inspect Linux package', '', 'Debian package (*.deb)')
         if path:
-            from package_inspection import inspect_deb
+            from tux_access.installation.native.inspection import inspect_deb
             canonical = str(Path(path).resolve())
             digest = self._verified_files.get(canonical)
             self._run('Inspecting Linux package…', lambda: inspect_deb(canonical, digest), 'package')
@@ -1766,7 +1766,7 @@ class Launcher(QtWidgets.QMainWindow):
         if not digest:
             self.status.setText('Download this package through the launcher first so its NI checksum can be verified.')
             return
-        from arch_package import install_verified_vst
+        from tux_access.installation.native.arch import install_verified_vst
         settings = self.settings
         def operation():
             result = install_verified_vst(canonical, digest)

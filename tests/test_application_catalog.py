@@ -1,8 +1,8 @@
 from dataclasses import replace
 import unittest
 
-from application_catalog import APPLICATIONS, expand_catalog, is_application
-from download_catalog import Artifact
+from tux_access.catalog.applications import APPLICATIONS, expand_catalog, is_application
+from tux_access.downloads.catalog import Artifact
 
 
 class ApplicationCatalogTests(unittest.TestCase):

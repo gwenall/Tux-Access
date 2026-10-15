@@ -12,8 +12,8 @@ import zipfile
 from unittest.mock import patch
 from unittest.mock import Mock
 
-from kontakt_890_plan import load_plan
-from wine_manager import (WineManager, WineError, WineCancelled, _archive_members,
+from tux_access.installation.plans.kontakt_890 import load_plan
+from tux_access.installation.wine.kontakt import (WineManager, WineError, WineCancelled, _archive_members,
                           _place_files, _publish_directory, validate_plan,
                           ZIP_SHA256, ZIP_SIZE, PAYLOAD_COUNT, PAYLOAD_SIZE,
                           EXE_TARGET, VST3_TARGET)
@@ -50,9 +50,9 @@ class WineManagerTests(unittest.TestCase):
             manager, prefix, home, receipt, rows = self.legacy_fixture(temporary)
             original = receipt.read_bytes()
             files_before = sorted(str(path.relative_to(prefix)) for path in prefix.rglob('*'))
-            with patch('wine_manager.Path.home', return_value=home), \
-                 patch('wine_manager.LEGACY_RECEIPT_SHA256', hashlib.sha256(original).hexdigest()), \
-                 patch('wine_manager.validate_plan', return_value=rows):
+            with patch('tux_access.installation.wine.kontakt.Path.home', return_value=home), \
+                 patch('tux_access.installation.wine.kontakt.LEGACY_RECEIPT_SHA256', hashlib.sha256(original).hexdigest()), \
+                 patch('tux_access.installation.wine.kontakt.validate_plan', return_value=rows):
                 record = manager.detect_legacy_installation()
             self.assertTrue(record['installed'])
             self.assertFalse(record['managed'])
@@ -66,9 +66,9 @@ class WineManagerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             manager, prefix, home, receipt, rows = self.legacy_fixture(temporary)
             original = receipt.read_bytes()
-            with patch('wine_manager.Path.home', return_value=home), \
-                 patch('wine_manager.LEGACY_RECEIPT_SHA256', hashlib.sha256(original).hexdigest()), \
-                 patch('wine_manager.validate_plan', return_value=rows):
+            with patch('tux_access.installation.wine.kontakt.Path.home', return_value=home), \
+                 patch('tux_access.installation.wine.kontakt.LEGACY_RECEIPT_SHA256', hashlib.sha256(original).hexdigest()), \
+                 patch('tux_access.installation.wine.kontakt.validate_plan', return_value=rows):
                 executable = prefix / 'drive_c' / EXE_TARGET
                 executable.write_bytes(b'changed exe')
                 self.assertEqual(len(executable.read_bytes()), rows[0]['size'])
@@ -90,12 +90,12 @@ class WineManagerTests(unittest.TestCase):
     def test_legacy_launch_rejects_record_paths_outside_the_known_verified_prefix(self):
         with tempfile.TemporaryDirectory() as temporary:
             manager, prefix, home, receipt, rows = self.legacy_fixture(temporary)
-            with patch('wine_manager.Path.home', return_value=home), \
-                 patch('wine_manager.LEGACY_RECEIPT_SHA256', hashlib.sha256(receipt.read_bytes()).hexdigest()), \
-                 patch('wine_manager.validate_plan', return_value=rows), \
+            with patch('tux_access.installation.wine.kontakt.Path.home', return_value=home), \
+                 patch('tux_access.installation.wine.kontakt.LEGACY_RECEIPT_SHA256', hashlib.sha256(receipt.read_bytes()).hexdigest()), \
+                 patch('tux_access.installation.wine.kontakt.validate_plan', return_value=rows), \
                  patch.object(manager, '_prepare_display'), \
                  patch.object(manager, '_wine', return_value='/fixture/wine'), \
-                 patch('wine_manager.subprocess.Popen') as process:
+                 patch('tux_access.installation.wine.kontakt.subprocess.Popen') as process:
                 record = manager.detect_legacy_installation()
                 with self.assertRaisesRegex(WineError, 'does not match'):
                     manager.launch_record({**record, 'executable': '/tmp/imported.exe'})
@@ -235,12 +235,12 @@ class WineManagerTests(unittest.TestCase):
     def test_publication_shutdown_accepts_already_exited_wineserver_but_requires_wait_success(self):
         with tempfile.TemporaryDirectory() as temporary:
             manager = WineManager(settings(temporary))
-            with patch('wine_manager.Path.is_file', return_value=True), \
-                 patch('wine_manager.subprocess.run', side_effect=[SimpleNamespace(returncode=1), SimpleNamespace(returncode=0)]) as run:
+            with patch('tux_access.installation.wine.kontakt.Path.is_file', return_value=True), \
+                 patch('tux_access.installation.wine.kontakt.subprocess.run', side_effect=[SimpleNamespace(returncode=1), SimpleNamespace(returncode=0)]) as run:
                 manager._stop_prefix('/fixture/wine', manager.prefix, strict=True)
             self.assertEqual([call.args[0][1] for call in run.call_args_list], ['-k', '-w'])
-            with patch('wine_manager.Path.is_file', return_value=True), \
-                 patch('wine_manager.subprocess.run', side_effect=[SimpleNamespace(returncode=1), SimpleNamespace(returncode=1)]):
+            with patch('tux_access.installation.wine.kontakt.Path.is_file', return_value=True), \
+                 patch('tux_access.installation.wine.kontakt.subprocess.run', side_effect=[SimpleNamespace(returncode=1), SimpleNamespace(returncode=1)]):
                 with self.assertRaisesRegex(WineError, 'Cannot stop'):
                     manager._stop_prefix('/fixture/wine', manager.prefix, strict=True)
 
@@ -249,7 +249,7 @@ class WineManagerTests(unittest.TestCase):
             manager = WineManager(settings(temporary))
             installer = Path(temporary) / 'bad.zip'
             installer.write_bytes(b'bad')
-            with patch.object(manager, 'preflight', return_value=[]), patch('wine_manager.ZIP_SIZE', 3):
+            with patch.object(manager, 'preflight', return_value=[]), patch('tux_access.installation.wine.kontakt.ZIP_SIZE', 3):
                 with self.assertRaisesRegex(WineError, 'Unsupported installer'):
                     manager.install_kontakt_890(installer)
             self.assertFalse(manager.prefix_root.exists())
@@ -283,14 +283,14 @@ class WineManagerTests(unittest.TestCase):
                  patch.object(manager, '_wine', return_value='/fixture/wine'), \
                  patch.object(manager, '_run', side_effect=run), \
                  patch.object(manager, '_stop_prefix'), \
-                 patch('wine_manager.shutil.which', return_value='/fixture/7z'), \
-                 patch('wine_manager.shutil.disk_usage', return_value=SimpleNamespace(free=20 * 1024**3)), \
-                 patch('wine_manager.ZIP_SHA256', expected), \
-                 patch('wine_manager.ZIP_SIZE', installer.stat().st_size), \
-                 patch('wine_manager.SETUP_SIZE', 3), \
-                 patch('wine_manager.VCREDIST_SIZE', len(runtime)), \
-                 patch('wine_manager.VCREDIST_SHA256', hashlib.sha256(runtime).hexdigest()), \
-                 patch('wine_manager._archive_members', return_value=[{'Path': 'fixture', 'Size': '1'}] * 8148):
+                 patch('tux_access.installation.wine.kontakt.shutil.which', return_value='/fixture/7z'), \
+                 patch('tux_access.installation.wine.kontakt.shutil.disk_usage', return_value=SimpleNamespace(free=20 * 1024**3)), \
+                 patch('tux_access.installation.wine.kontakt.ZIP_SHA256', expected), \
+                 patch('tux_access.installation.wine.kontakt.ZIP_SIZE', installer.stat().st_size), \
+                 patch('tux_access.installation.wine.kontakt.SETUP_SIZE', 3), \
+                 patch('tux_access.installation.wine.kontakt.VCREDIST_SIZE', len(runtime)), \
+                 patch('tux_access.installation.wine.kontakt.VCREDIST_SHA256', hashlib.sha256(runtime).hexdigest()), \
+                 patch('tux_access.installation.wine.kontakt._archive_members', return_value=[{'Path': 'fixture', 'Size': '1'}] * 8148):
                 with self.assertRaisesRegex(WineError, 'Fixture wineboot failed'):
                     manager.install_kontakt_890(installer)
                 boot_succeeds = True
@@ -317,9 +317,9 @@ class WineManagerTests(unittest.TestCase):
             manager = WineManager(settings(temporary), progress=lambda *values: events.append(values))
             process = Mock(returncode=0)
             process.poll.side_effect = [None, None, 0, 0]
-            with patch('wine_manager.subprocess.Popen', return_value=process), \
-                 patch('wine_manager.time.monotonic', side_effect=[0, 11, 22]), \
-                 patch('wine_manager.time.sleep'):
+            with patch('tux_access.installation.wine.kontakt.subprocess.Popen', return_value=process), \
+                 patch('tux_access.installation.wine.kontakt.time.monotonic', side_effect=[0, 11, 22]), \
+                 patch('tux_access.installation.wine.kontakt.time.sleep'):
                 manager._run(['/fixture/wine', 'wineboot.exe', '--init'], prefix=manager.prefix, timeout=300)
             self.assertEqual(len(events), 2)
             self.assertTrue(all(event[:3] == ('initializing', 0, 0) for event in events))
@@ -334,7 +334,7 @@ class WineManagerTests(unittest.TestCase):
             with patch.object(manager, 'installation_status', return_value={'status': 'installed'}), \
                  patch.object(manager, '_prepare_display'), \
                  patch.object(manager, '_wine', return_value='/fixture/wine'), \
-                 patch('wine_manager.subprocess.Popen') as process:
+                 patch('tux_access.installation.wine.kontakt.subprocess.Popen') as process:
                 manager.launch_kontakt()
             launch = process.call_args.kwargs['env']
             self.assertEqual(launch['WINEDLLOVERRIDES'], 'winemenubuilder.exe=d')

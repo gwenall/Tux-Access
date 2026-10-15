@@ -1,5 +1,5 @@
 import sys,json
-import account_auth as auth
+import tux_access.auth.oauth as auth
 import unittest
 from urllib.parse import parse_qs,urlsplit
 class AuthTests(unittest.TestCase):

@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from oauth_callback import CallbackError, CallbackReceiver, MAX_URI_BYTES, forward_callback
+from tux_access.auth.callback import CallbackError, CallbackReceiver, MAX_URI_BYTES, forward_callback
 
 
 @unittest.skipUnless(os.name == 'posix' and hasattr(socket, 'AF_UNIX'), 'POSIX sockets required')
@@ -112,7 +112,7 @@ class CallbackTests(unittest.TestCase):
 
     def test_runtime_owned_by_another_uid_is_rejected(self):
         # Simulate launching as another user against this actual directory.
-        with patch('oauth_callback.os.getuid', return_value=self.runtime.stat().st_uid + 1):
+        with patch('tux_access.auth.callback.os.getuid', return_value=self.runtime.stat().st_uid + 1):
             with self.assertRaises(CallbackError):
                 self.receiver()
             with self.assertRaises(CallbackError):

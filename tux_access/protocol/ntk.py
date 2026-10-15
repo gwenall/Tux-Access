@@ -218,7 +218,7 @@ class NtkClient:
 
     def inspect(self, operation):
         """Read complete descriptor-backed messages for three allowlisted queries."""
-        from schema_codec import encode, decode
+        from tux_access.protocol.codec import encode, decode
         queries = {
             'preferences': ('get_preferences_request', 'get_preferences_response'),
             'deployments': ('active_deployments_request', 'active_deployments_response'),

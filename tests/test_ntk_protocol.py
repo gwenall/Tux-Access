@@ -1,6 +1,6 @@
 import sys
 import unittest
-from ntk_protocol import *
+from tux_access.protocol.ntk import *
 
 
 class CodecTests(unittest.TestCase):

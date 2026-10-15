@@ -8,11 +8,11 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from maschine_2184_plan import load_plan, load_hashes
-from maschine_manager import (MaschineManager, ZIP_SHA256, ZIP_SIZE, SETUP_NAME,
+from tux_access.installation.plans.maschine_2184 import load_plan, load_hashes
+from tux_access.installation.wine.maschine import (MaschineManager, ZIP_SHA256, ZIP_SIZE, SETUP_NAME,
                               EXE_TARGET, RECEIPT, VCREDIST_PATH,
                               PAYLOAD_COUNT, PAYLOAD_SIZE, validate_maschine_plan)
-from wine_manager import WineError, WineCancelled
+from tux_access.installation.wine.kontakt import WineError, WineCancelled
 
 
 def settings(root):
@@ -50,7 +50,7 @@ class MaschineTests(unittest.TestCase):
             archive.write_bytes(b'bad')
             with patch.object(manager, 'preflight', return_value=[]), \
                  patch.object(manager, '_prepare_display', side_effect=AssertionError('no display before verification')), \
-                 patch('maschine_manager.ZIP_SIZE', 3):
+                 patch('tux_access.installation.wine.maschine.ZIP_SIZE', 3):
                 with self.assertRaisesRegex(WineError, 'Unsupported Maschine installer'):
                     manager.install_maschine_2184(archive)
             self.assertFalse(manager.prefix_root.exists())
@@ -112,14 +112,14 @@ class MaschineTests(unittest.TestCase):
                   'SETUP_SIZE': 5, 'SETUP_SHA256': hashlib.sha256(b'setup').hexdigest(),
                   'VCREDIST_SIZE': len(runtime), 'VCREDIST_SHA256': hashlib.sha256(runtime).hexdigest()}
         for key, value in values.items():
-            context.enter_context(patch('maschine_manager.' + key, value))
-        context.enter_context(patch('maschine_manager.load_plan', return_value={'files': rows}))
-        context.enter_context(patch('maschine_manager.load_hashes', return_value=hashes))
-        context.enter_context(patch('maschine_manager.validate_maschine_plan', return_value=rows))
-        context.enter_context(patch('maschine_manager.shutil.which', return_value='/fixture/7z'))
-        context.enter_context(patch('maschine_manager.shutil.disk_usage', return_value=SimpleNamespace(free=10 * 1024**3)))
-        context.enter_context(patch('maschine_manager._archive_members', return_value=[{'Path': 'fixture', 'Size': '1'}] * 819))
-        context.enter_context(patch('maschine_manager._publish_directory', side_effect=lambda source, target: source.rename(target)))
+            context.enter_context(patch('tux_access.installation.wine.maschine.' + key, value))
+        context.enter_context(patch('tux_access.installation.wine.maschine.load_plan', return_value={'files': rows}))
+        context.enter_context(patch('tux_access.installation.wine.maschine.load_hashes', return_value=hashes))
+        context.enter_context(patch('tux_access.installation.wine.maschine.validate_maschine_plan', return_value=rows))
+        context.enter_context(patch('tux_access.installation.wine.maschine.shutil.which', return_value='/fixture/7z'))
+        context.enter_context(patch('tux_access.installation.wine.maschine.shutil.disk_usage', return_value=SimpleNamespace(free=10 * 1024**3)))
+        context.enter_context(patch('tux_access.installation.wine.maschine._archive_members', return_value=[{'Path': 'fixture', 'Size': '1'}] * 819))
+        context.enter_context(patch('tux_access.installation.wine.maschine._publish_directory', side_effect=lambda source, target: source.rename(target)))
         return context, manager, archive, hashes, calls
 
     def test_success_requires_complete_boot_and_original_payload_before_publication(self):
@@ -197,7 +197,7 @@ class MaschineTests(unittest.TestCase):
             self.assertFalse(manager.installation_status()['installed'])
             record = {'title': 'Maschine 2', 'version': '2.18.4', 'backend': 'wine', 'managed': True,
                       'prefix': '/tmp/imported-prefix', 'executable': '/tmp/imported.exe', 'receipt': '/tmp/imported.json'}
-            with patch('maschine_manager.subprocess.Popen', side_effect=AssertionError('must not execute')):
+            with patch('tux_access.installation.wine.maschine.subprocess.Popen', side_effect=AssertionError('must not execute')):
                 with self.assertRaises(WineError):
                     manager.launch_record(record)
 

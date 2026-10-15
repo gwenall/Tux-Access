@@ -10,17 +10,17 @@ try:
     from PySide6 import QtWidgets
 except ImportError:
     raise unittest.SkipTest('Qt desktop extra is not installed')
-from app_settings import default_settings
-from download_catalog import Artifact
-from qt_launcher import Launcher
+from tux_access.settings import default_settings
+from tux_access.downloads.catalog import Artifact
+from tux_access.ui.main_window import Launcher
 
 app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
 class BundleUiTests(unittest.TestCase):
     def setUp(self):
-        with patch('app_settings.load_settings', return_value=default_settings()), \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.settings.load_settings', return_value=default_settings()), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window = Launcher()
         self.window._timer.stop()
         self.settle()
@@ -61,7 +61,7 @@ class BundleUiTests(unittest.TestCase):
         original_artwork = self.window.sidebar_art.source_path
         self.assertEqual(self.window.product_actions[0].text(), 'View products')
         with patch.object(QtWidgets.QDialog, 'exec') as modal, \
-             patch('install_coordinator.install_product') as install, \
+             patch('tux_access.installation.install.install_product') as install, \
              patch.object(self.window, 'download_artifact') as download:
             self.window.product_actions[0].click()
             self.assertIs(self.window.pages.currentWidget(), self.window._bundle_page)
@@ -87,7 +87,7 @@ class BundleUiTests(unittest.TestCase):
 
     def test_defensive_bundle_install_opens_page_and_unknown_membership_does_not_use_owned_rows(self):
         unknown = {'title': 'Other collection', 'upid': 'unknown-bundle', 'type': 5}
-        with patch('install_coordinator.install_product') as install:
+        with patch('tux_access.installation.install.install_product') as install:
             self.window.install_product(self.bundle)
             self.assertIs(self.window.pages.currentWidget(), self.window._bundle_page)
             self.window.install_product(unknown)
@@ -124,8 +124,8 @@ class BundleUiTests(unittest.TestCase):
             release.wait(3)
             return {'title': 'Massive', 'version': '1.7.0', 'backend': 'wine', 'activation': 'unverified'}
         local = {'title': 'Massive', 'version': '1.7.0', 'backend': 'wine', 'status': 'Installed · activation unverified'}
-        with patch('install_coordinator.install_product', side_effect=pipeline) as install, \
-             patch('install_coordinator.installed_catalog', return_value=[local]):
+        with patch('tux_access.installation.install.install_product', side_effect=pipeline) as install, \
+             patch('tux_access.installation.install.installed_catalog', return_value=[local]):
             self.action('Massive').click()
             try:
                 self.assertTrue(entered.wait(1))
@@ -144,7 +144,7 @@ class BundleUiTests(unittest.TestCase):
 
     def test_missing_authorization_and_unsupported_member_options_are_visible_without_install(self):
         self.window.show_bundle(self.bundle)
-        with patch('install_coordinator.install_product') as install:
+        with patch('tux_access.installation.install.install_product') as install:
             self.action('Kontakt 8').click()
             self.assertIs(self.window.pages.currentWidget(), self.window._settings_page)
             text = '\n'.join(label.text() for label in self.window._settings_page.findChildren(QtWidgets.QLabel))
@@ -162,14 +162,14 @@ class BundleUiTests(unittest.TestCase):
         self.window._merge_installed([record])
         self.window.show_bundle(self.bundle)
         self.assertEqual(self.action('Massive').text(), 'Launch')
-        with patch('massive_manager.MassiveManager') as manager:
+        with patch('tux_access.installation.wine.massive.MassiveManager') as manager:
             manager.return_value.launch_record.return_value.pid = 123
             self.action('Massive').click()
             self.settle()
             passed = manager.return_value.launch_record.call_args.args[0]
             self.assertEqual(passed['prefix'], '/known/massive')
         missing = next(product for product in self.window._bundle_rows if product['title'] == 'Kontakt 8')
-        with patch('install_coordinator.install_product') as install:
+        with patch('tux_access.installation.install.install_product') as install:
             self.window.install_product(missing)
             self.assertIs(self.window.pages.currentWidget(), self.window._settings_page)
             install.assert_not_called()

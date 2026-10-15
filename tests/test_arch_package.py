@@ -5,7 +5,7 @@ import tarfile
 import tempfile
 import unittest
 from unittest.mock import patch
-from arch_package import build_arch_vst_packages, InstallationError
+from tux_access.installation.native.arch import build_arch_vst_packages, InstallationError
 from test_package_inspection import archive, member
 
 
@@ -25,7 +25,7 @@ class ArchPackageTests(unittest.TestCase):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
                 package = Path(directory) / 'fixture.deb'
                 package.write_bytes(fixture({name: b'reject'}))
-                with patch('arch_package.subprocess.run', side_effect=AssertionError('Must not run command')):
+                with patch('tux_access.installation.native.arch.subprocess.run', side_effect=AssertionError('Must not run command')):
                     with self.assertRaises(InstallationError):
                         build_arch_vst_packages(package, hashlib.sha256(package.read_bytes()).hexdigest(), directory, Path(directory) / 'out')
                 self.assertFalse((Path(directory) / 'out').exists())
@@ -43,7 +43,7 @@ class ArchPackageTests(unittest.TestCase):
                 return {'machine': 62, 'plugin_entrypoints': ['VSTPluginMain']}
             def configure(command, **kwargs):
                 path = Path(command[-1]); path.write_bytes(path.read_bytes() + b'-rpath')
-            with patch('arch_package._elf', side_effect=elf), patch('arch_package.subprocess.run', side_effect=configure) as process:
+            with patch('tux_access.installation.native.arch._elf', side_effect=elf), patch('tux_access.installation.native.arch.subprocess.run', side_effect=configure) as process:
                 result = build_arch_vst_packages(package, hashlib.sha256(package.read_bytes()).hexdigest(), root, root / 'out')
             self.assertEqual(process.call_count, 1)
             self.assertFalse(result['manifest']['debian_maintainer_scripts_executed'])
@@ -56,7 +56,7 @@ class ArchPackageTests(unittest.TestCase):
                 self.assertEqual(registry.mode, 0o644)
                 binary = archive_file.extractfile('usr/lib/vst/Phasis.so').read()
                 self.assertEqual(result['manifest']['files']['usr/lib/vst/Phasis.so'], hashlib.sha256(binary).hexdigest())
-            with self.assertRaises(FileExistsError), patch('arch_package._elf', side_effect=elf), patch('arch_package.subprocess.run', side_effect=configure):
+            with self.assertRaises(FileExistsError), patch('tux_access.installation.native.arch._elf', side_effect=elf), patch('tux_access.installation.native.arch.subprocess.run', side_effect=configure):
                 build_arch_vst_packages(package, hashlib.sha256(package.read_bytes()).hexdigest(), root, root / 'out')
 
     def test_incorrect_compatibility_abi_rejected(self):
@@ -64,7 +64,7 @@ class ArchPackageTests(unittest.TestCase):
             root = Path(directory)
             package = root / 'fixture.deb'; package.write_bytes(fixture())
             (root / 'libssl.so.1.1').write_bytes(b'wrong-ABI')
-            with patch('arch_package._elf', return_value={'machine': 62, 'soname': 'libssl.so.3'}):
+            with patch('tux_access.installation.native.arch._elf', return_value={'machine': 62, 'soname': 'libssl.so.3'}):
                 with self.assertRaises(InstallationError):
                     build_arch_vst_packages(package, hashlib.sha256(package.read_bytes()).hexdigest(), root, root / 'out')
             self.assertFalse((root / 'out').exists())
@@ -74,7 +74,7 @@ class ArchPackageTests(unittest.TestCase):
 class InstalledRecordTests(unittest.TestCase):
     def test_missing_or_changed_compatibility_cannot_report_installed(self):
         import json
-        from arch_package import installed_products, COMPAT_LIBRARIES
+        from tux_access.installation.native.arch import installed_products, COMPAT_LIBRARIES
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             hashes = {}
@@ -96,7 +96,7 @@ class InstalledRecordTests(unittest.TestCase):
 
     @unittest.skipUnless(__import__('os').name == 'posix', 'POSIX staging required')
     def test_shared_and_symlink_runtime_rejected(self):
-        from arch_package import _private_install_runtime
+        from tux_access.installation.native.arch import _private_install_runtime
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             runtime = root / 'runtime'; runtime.mkdir(mode=0o700)
@@ -116,7 +116,7 @@ class InstalledRecordTests(unittest.TestCase):
 class InstallerCleanupTests(unittest.TestCase):
     @unittest.skipUnless(__import__('os').name == 'posix', 'POSIX staging required')
     def test_system_authentication_uses_only_fixed_pacman_command(self):
-        from arch_package import install_verified_vst
+        from tux_access.installation.native.arch import install_verified_vst
         import subprocess
         for polkit in (True, False):
             with self.subTest(polkit=polkit), tempfile.TemporaryDirectory() as directory:
@@ -124,10 +124,10 @@ class InstallerCleanupTests(unittest.TestCase):
                 package_path = str(root / 'prepared.pkg.tar.xz')
                 def available(path):
                     return polkit if str(path) == '/usr/bin/pkexec' else True
-                with patch('arch_package.Path.is_file', available), \
-                     patch('arch_package._private_install_runtime', return_value=root), \
-                     patch('arch_package.build_arch_vst_packages', return_value={'packages': [package_path], 'manifest': {'title': 'fixture'}}), \
-                     patch('arch_package.subprocess.run', return_value=subprocess.CompletedProcess([], 0)) as process:
+                with patch('tux_access.installation.native.arch.Path.is_file', available), \
+                     patch('tux_access.installation.native.arch._private_install_runtime', return_value=root), \
+                     patch('tux_access.installation.native.arch.build_arch_vst_packages', return_value={'packages': [package_path], 'manifest': {'title': 'fixture'}}), \
+                     patch('tux_access.installation.native.arch.subprocess.run', return_value=subprocess.CompletedProcess([], 0)) as process:
                     install_verified_vst('fixture', 'a' * 64, root)
                 expected = ['/usr/bin/pkexec'] if polkit else ['/usr/bin/sudo', '-n']
                 self.assertEqual(process.call_args.args[0], expected + ['/usr/bin/pacman', '-U', '--noconfirm', package_path])
@@ -135,7 +135,7 @@ class InstallerCleanupTests(unittest.TestCase):
 
     @unittest.skipUnless(__import__('os').name == 'posix', 'POSIX staging required')
     def test_private_package_staging_cleaned_after_success_and_failure(self):
-        from arch_package import install_verified_vst
+        from tux_access.installation.native.arch import install_verified_vst
         import subprocess
         for exit_code in (0, 1):
             with self.subTest(exit_code=exit_code), tempfile.TemporaryDirectory() as directory:
@@ -143,7 +143,7 @@ class InstallerCleanupTests(unittest.TestCase):
                 def build(package, digest, compatibility, staging):
                     target = Path(staging) / 'local.pkg.tar.xz'; target.write_bytes(b'fixture')
                     return {'packages':[str(target)], 'manifest':{'title':'fixture'}}
-                with patch('arch_package.Path.is_file', return_value=True), patch('arch_package._private_install_runtime', return_value=root), patch('arch_package.build_arch_vst_packages', side_effect=build), patch('arch_package.subprocess.run', return_value=subprocess.CompletedProcess([],exit_code)):
+                with patch('tux_access.installation.native.arch.Path.is_file', return_value=True), patch('tux_access.installation.native.arch._private_install_runtime', return_value=root), patch('tux_access.installation.native.arch.build_arch_vst_packages', side_effect=build), patch('tux_access.installation.native.arch.subprocess.run', return_value=subprocess.CompletedProcess([],exit_code)):
                     if exit_code:
                         with self.assertRaises(InstallationError):install_verified_vst('fixture','a'*64,root)
                     else:

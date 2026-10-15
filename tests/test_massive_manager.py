@@ -1,8 +1,8 @@
 import unittest
 from dataclasses import replace
-from massive_manager import PROFILE, EXE_TARGET
-from ni_application_manager import validate_payload
-from wine_manager import WineError
+from tux_access.installation.wine.massive import PROFILE, EXE_TARGET
+from tux_access.installation.wine.application import validate_payload
+from tux_access.installation.wine.kontakt import WineError
 
 
 class MassiveProfileTests(unittest.TestCase):

@@ -5,7 +5,7 @@ import tarfile
 import tempfile
 import unittest
 from unittest.mock import patch
-from package_inspection import inspect_deb, PackageError
+from tux_access.installation.native.inspection import inspect_deb, PackageError
 
 def member(name, data):
     header = f'{name+"/":<16}{0:<12}{0:<6}{0:<6}{100644:<8}{len(data):<10}`\n'.encode()

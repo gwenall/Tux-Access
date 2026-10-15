@@ -2,7 +2,7 @@
 import json
 import urllib.error
 import urllib.request
-from account_api import _NoRedirect, AccountApiError
+from tux_access.auth.api import _NoRedirect, AccountApiError
 
 PROFILE_URL = 'https://auth.native-instruments.com/userinfo'
 

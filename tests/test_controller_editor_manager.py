@@ -1,8 +1,8 @@
 from dataclasses import replace
 import unittest
-from controller_editor_manager import PROFILE, EXE_TARGET, HARDWARE_SERVICE_TARGET
-from ni_application_manager import validate_payload
-from wine_manager import WineError
+from tux_access.installation.wine.controller_editor import PROFILE, EXE_TARGET, HARDWARE_SERVICE_TARGET
+from tux_access.installation.wine.application import validate_payload
+from tux_access.installation.wine.kontakt import WineError
 
 
 class ControllerEditorProfileTests(unittest.TestCase):

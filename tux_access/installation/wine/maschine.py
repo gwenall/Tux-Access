@@ -13,8 +13,8 @@ import subprocess
 import tempfile
 import zipfile
 
-from maschine_2184_plan import load_plan, load_hashes, PLAN_SHA256, HASHES_SHA256
-from wine_manager import (WineManager, WineError, WineCancelled, InstallResult,
+from tux_access.installation.plans.maschine_2184 import load_plan, load_hashes, PLAN_SHA256, HASHES_SHA256
+from tux_access.installation.wine.kontakt import (WineManager, WineError, WineCancelled, InstallResult,
                           _relative, _directory, _ancestry, _regular, _digest,
                           _copy_stream, _archive_members, _place_files,
                           _publish_directory)

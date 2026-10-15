@@ -14,7 +14,7 @@ import tempfile
 from typing import Callable
 import zipfile
 
-from wine_manager import (WineManager, WineError, WineCancelled, InstallResult,
+from tux_access.installation.wine.kontakt import (WineManager, WineError, WineCancelled, InstallResult,
                           _relative, _directory, _ancestry, _regular, _digest,
                           _copy_stream, _archive_members, _place_files, _publish_directory)
 

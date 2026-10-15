@@ -45,7 +45,7 @@ profile. Hardware graphics acceleration was not required.
 ```sh
 sudo pacman -Syu --needed python pyside6 python-pyzmq qt6-wayland firefox xdg-utils ttf-dejavu
 cd native-access-linux
-QT_QPA_PLATFORM=wayland python launcher.py
+QT_QPA_PLATFORM=wayland python -m tux_access
 ```
 
 This uses Arch's installed Python libraries. For a pip environment, use the

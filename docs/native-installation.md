@@ -8,7 +8,7 @@ checksum-verifying downloader. NI binaries are not supplied by this project.
 Prepare the required legacy ABIs from the source checkout:
 
 ```sh
-bash tools/prepare_arch_compat.sh
+bash tux_access/resources/prepare_arch_compat.sh
 ```
 
 This verifies the archived Arch OpenSSL 1.1 package signature, checks Apache's
@@ -28,7 +28,7 @@ an existing `sudo -n` grant; the development VM has that grant. If your desktop
 has no authentication agent, use the terminal build route:
 
 ```sh
-python launcher.py --build-arch-vst ni-phasis_Installer.deb \
+python -m tux_access --build-arch-vst ni-phasis_Installer.deb \
   --expected-sha256 SHA256_FROM_VERIFIED_DOWNLOAD \
   --compat-libraries "$HOME/.local/lib/native-access-linux/compat-legacy/lib" \
   --output-dir local-packages

@@ -11,23 +11,23 @@ try:
     from PySide6 import QtCore, QtWidgets
 except ImportError:
     raise unittest.SkipTest('Qt desktop extra is not installed')
-from qt_launcher import Launcher
-from app_settings import default_settings
-from download_manager import DownloadCancelled
+from tux_access.ui.main_window import Launcher
+from tux_access.settings import default_settings
+from tux_access.downloads.manager import DownloadCancelled
 
 app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
 class ProductActionTests(unittest.TestCase):
     def setUp(self):
-        profile_patch = patch('account_profile.profile', return_value={})
+        profile_patch = patch('tux_access.auth.profile.profile', return_value={})
         self.addCleanup(profile_patch.stop)
         self.profile_mock = profile_patch.start()
-        artifacts_patch = patch('download_catalog.available_artifacts', return_value=[])
+        artifacts_patch = patch('tux_access.downloads.catalog.available_artifacts', return_value=[])
         self.addCleanup(artifacts_patch.stop)
         self.artifacts_mock = artifacts_patch.start()
-        with patch('app_settings.load_settings', return_value=default_settings()), \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.settings.load_settings', return_value=default_settings()), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window = Launcher()
         self.window._timer.stop()
         self.settle()
@@ -65,8 +65,8 @@ class ProductActionTests(unittest.TestCase):
         self.assertEqual(self.window.product_actions[0].text(), 'Install')
         self.assertTrue(self.window.product_actions[1].isEnabled())
         self.assertEqual(self.window.product_actions[1].text(), 'Install')
-        with patch('install_coordinator.install_product', side_effect=pipeline) as installer, \
-             patch('install_coordinator.installed_catalog', return_value=[]), \
+        with patch('tux_access.installation.install.install_product', side_effect=pipeline) as installer, \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]), \
              patch.object(self.window, '_show_download_picker') as picker, \
              patch.object(QtWidgets.QFileDialog, 'getExistingDirectory') as directory:
             self.window.product_actions[0].click()
@@ -81,8 +81,8 @@ class ProductActionTests(unittest.TestCase):
         self.assertEqual(self.window.products[1], self.other)
 
     def test_login_automatically_loads_catalog_and_keeps_credentials_transient(self):
-        with patch('account_api.catalog', return_value={'products': [{'title': 'Phasis'}]}) as catalog, \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.auth.api.catalog', return_value={'products': [{'title': 'Phasis'}]}) as catalog, \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window._events.put(('login', {'access_token': 'private-token', 'refresh_token': 'private-refresh'}))
             self.window.poll()
             self.settle()
@@ -93,8 +93,8 @@ class ProductActionTests(unittest.TestCase):
         self.assertNotIn('private-refresh', visible)
 
     def test_account_worker_expands_only_authorized_standalone_bundle_children_and_merges_aliases(self):
-        from application_catalog import APPLICATIONS
-        from download_catalog import Artifact
+        from tux_access.catalog.applications import APPLICATIONS
+        from tux_access.downloads.catalog import Artifact
         maschine = 'fccc863c-324f-4d79-af7e-b38c1f7488fe'
         guitar = 'e390057f-14b9-4e78-b033-3d7cc7e7767b'
         absynth = '00b224af-b357-4dfe-9929-414bbdf97d6f'
@@ -114,8 +114,8 @@ class ProductActionTests(unittest.TestCase):
             return artifacts
         self.artifacts_mock.side_effect = metadata
         self.window._token = 'private-token'
-        with patch('account_api.catalog', return_value=payload), \
-             patch('install_coordinator.installed_catalog', return_value=[local]):
+        with patch('tux_access.auth.api.catalog', return_value=payload), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[local]):
             self.window.account_catalog()
             self.settle()
         self.artifacts_mock.assert_called_once_with('private-token')
@@ -135,8 +135,8 @@ class ProductActionTests(unittest.TestCase):
     def test_optional_artifact_failure_keeps_valid_catalog_with_private_safe_warning(self):
         self.window._token = 'private-token'
         self.artifacts_mock.side_effect = RuntimeError('private-token https://private.example/signed?key=secret')
-        with patch('account_api.catalog', return_value={'products': [self.product]}), \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.auth.api.catalog', return_value={'products': [self.product]}), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window.account_catalog()
             self.settle()
         self.assertEqual(self.window.products, [self.product])
@@ -181,7 +181,7 @@ class ProductActionTests(unittest.TestCase):
         def fail(*args, **kwargs):
             attempts.append(1)
             raise RuntimeError('private-token https://example.test/file?signature=private')
-        with patch('install_coordinator.install_product', side_effect=fail):
+        with patch('tux_access.installation.install.install_product', side_effect=fail):
             self.window.install_product(self.product)
             self.settle()
             self.assertIn('Operation failed', self.window.status.text())
@@ -200,7 +200,7 @@ class ProductActionTests(unittest.TestCase):
         def cancel(*args, **kwargs):
             release.wait(3)
             raise DownloadCancelled('Download cancelled; partial file removed')
-        with patch('install_coordinator.install_product', side_effect=cancel):
+        with patch('tux_access.installation.install.install_product', side_effect=cancel):
             self.window.install_product(self.product)
             self.window.cancel_button.click()
             release.set()
@@ -233,22 +233,22 @@ class ProductActionTests(unittest.TestCase):
         self.assertEqual(self.window.table.rowCount(), 1)
 
     def test_advanced_manual_install_still_requires_verified_session_digest(self):
-        with patch('arch_package.install_verified_vst') as installer:
+        with patch('tux_access.installation.native.arch.install_verified_vst') as installer:
             self.window._install_verified_path(str(Path('unverified.deb').resolve()))
             installer.assert_not_called()
         self.assertIn('checksum', self.window.status.text())
 
     def test_install_without_account_cannot_start_a_download(self):
-        with patch('install_coordinator.install_product') as installer:
+        with patch('tux_access.installation.install.install_product') as installer:
             self.window.install_product(self.product)
             installer.assert_not_called()
         self.assertFalse(self.window._busy)
         self.assertIn('Sign in', self.window.status.text())
 
     def test_bad_settings_preserve_startup_with_visible_default_warning(self):
-        from app_settings import SettingsError
-        with patch('app_settings.load_settings', side_effect=SettingsError('Invalid configuration')), \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        from tux_access.settings import SettingsError
+        with patch('tux_access.settings.load_settings', side_effect=SettingsError('Invalid configuration')), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             window = Launcher()
         try:
             self.settle(window)
@@ -279,7 +279,7 @@ class ProductActionTests(unittest.TestCase):
         def launch(record):
             workers.append(threading.get_ident())
             return Process()
-        with patch('wine_manager.WineManager') as manager:
+        with patch('tux_access.installation.wine.kontakt.WineManager') as manager:
             manager.return_value.launch_record.side_effect = launch
             self.window.product_actions[0].click()
             self.settle()
@@ -288,7 +288,7 @@ class ProductActionTests(unittest.TestCase):
         self.assertIn('process started', self.window.status.text())
 
     def test_wine_diagnostics_return_actionable_checks_without_claiming_success(self):
-        with patch('wine_manager.WineManager') as manager:
+        with patch('tux_access.installation.wine.kontakt.WineManager') as manager:
             manager.return_value.diagnose.return_value = {'prefix': '/managed/kontakt', 'installation': {'status': 'not installed'},
                                                           'diagnostics': [{'status': 'error', 'message': 'Wine missing', 'action': 'Install Wine'}]}
             self.window.wine_diagnostics()
@@ -310,7 +310,7 @@ class ProductActionTests(unittest.TestCase):
             class Process:
                 pid = 1234
             return Process()
-        with patch('maschine_manager.MaschineManager') as manager, patch('wine_manager.WineManager') as kontakt:
+        with patch('tux_access.installation.wine.maschine.MaschineManager') as manager, patch('tux_access.installation.wine.kontakt.WineManager') as kontakt:
             manager.return_value.launch_record.side_effect = launch
             self.assertEqual(self.window.product_actions[0].text(), 'Launch')
             self.window.product_actions[0].click()
@@ -335,9 +335,9 @@ class ProductActionTests(unittest.TestCase):
             class Process:
                 pid = 4123
             return Process()
-        with patch('massive_manager.MassiveManager') as manager, \
-             patch('wine_manager.WineManager') as kontakt, \
-             patch('maschine_manager.MaschineManager') as maschine:
+        with patch('tux_access.installation.wine.massive.MassiveManager') as manager, \
+             patch('tux_access.installation.wine.kontakt.WineManager') as kontakt, \
+             patch('tux_access.installation.wine.maschine.MaschineManager') as maschine:
             manager.return_value.launch_record.side_effect = launch
             self.window.product_actions[0].click()
             self.settle()
@@ -357,9 +357,9 @@ class ProductActionTests(unittest.TestCase):
         self.assertNotEqual(self.window.product_actions[0].text(), 'Launch')
         self.assertFalse(self.window.product_actions[0].isEnabled())
         with patch.object(self.window, '_run') as worker, \
-             patch('wine_manager.WineManager') as kontakt, \
-             patch('maschine_manager.MaschineManager') as maschine, \
-             patch('massive_manager.MassiveManager') as massive:
+             patch('tux_access.installation.wine.kontakt.WineManager') as kontakt, \
+             patch('tux_access.installation.wine.maschine.MaschineManager') as maschine, \
+             patch('tux_access.installation.wine.massive.MassiveManager') as massive:
             self.window.launch_wine_product(record)
             worker.assert_not_called()
             kontakt.assert_not_called()
@@ -374,8 +374,8 @@ class ProductActionTests(unittest.TestCase):
         def scan(settings):
             workers.append(threading.get_ident())
             return [{'title': 'Kontakt 8', 'backend': 'wine', 'status': 'Installed · activation unverified'}]
-        with patch('app_settings.load_settings', return_value=default_settings()), \
-             patch('install_coordinator.installed_catalog', side_effect=scan):
+        with patch('tux_access.settings.load_settings', return_value=default_settings()), \
+             patch('tux_access.installation.install.installed_catalog', side_effect=scan):
             window = Launcher()
             self.settle(window)
         try:
@@ -386,8 +386,8 @@ class ProductActionTests(unittest.TestCase):
 
     def test_post_commit_scan_failure_does_not_prompt_reinstallation(self):
         self.window._token = 'private-token'
-        with patch('install_coordinator.install_product', return_value={'title': 'Phasis', 'version': '1.0', 'backend': 'native'}), \
-             patch('install_coordinator.installed_catalog', side_effect=OSError('Local check unavailable')):
+        with patch('tux_access.installation.install.install_product', return_value={'title': 'Phasis', 'version': '1.0', 'backend': 'native'}), \
+             patch('tux_access.installation.install.installed_catalog', side_effect=OSError('Local check unavailable')):
             self.window.install_product(self.product)
             self.settle()
         self.assertIn('files installed', self.window.status.text())
@@ -468,7 +468,7 @@ class ProductActionTests(unittest.TestCase):
 
     def test_settings_are_embedded_and_cancel_discards_unsaved_paths(self):
         original = self.window.settings
-        with patch.object(QtWidgets.QDialog, 'exec') as modal, patch('app_settings.save_settings') as save:
+        with patch.object(QtWidgets.QDialog, 'exec') as modal, patch('tux_access.settings.save_settings') as save:
             self.window.show_settings()
             self.assertIs(self.window.pages.currentWidget(), self.window._settings_page)
             self.assertFalse(isinstance(self.window._settings_page, QtWidgets.QDialog))
@@ -509,7 +509,7 @@ class ProductActionTests(unittest.TestCase):
         self.assertEqual(sidebar_layout.indexOf(self.window.about_button),
                          sidebar_layout.indexOf(self.window.settings_button) + 1)
         with patch.object(QtWidgets.QDialog, 'exec') as modal, \
-             patch('qt_launcher.QtGui.QDesktopServices.openUrl') as browser:
+             patch('tux_access.ui.main_window.QtGui.QDesktopServices.openUrl') as browser:
             self.window.about_button.click()
             page = self.window._about_page
             self.assertIs(self.window.pages.currentWidget(), page)
@@ -576,8 +576,8 @@ class ProductActionTests(unittest.TestCase):
         # Page construction captures the save adapter in its callback. Patch
         # before constructing it so this fixture never writes real settings.
         with tempfile.TemporaryDirectory() as directory, \
-             patch('app_settings.save_settings') as save, \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+             patch('tux_access.settings.save_settings') as save, \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window.show_settings()
             chosen = Path(directory) / 'chosen-downloads'
             self.window._settings_fields['download_directory'].setText(str(chosen))
@@ -596,9 +596,9 @@ class ProductActionTests(unittest.TestCase):
             workers.append(threading.get_ident())
             return {'name': 'Private Person', 'given_name': 'Gwen', 'picture': 'https://private.example/image', 'email': 'private@example.test'}
         local = {'title': 'Kontakt 8', 'backend': 'wine', 'status': 'Installed · activation unverified'}
-        with patch('account_api.catalog', return_value={'products': [{'title': 'Maschine 3', 'upid': 'maschine-id'}]}), \
-             patch('account_profile.profile', side_effect=profile), \
-             patch('install_coordinator.installed_catalog', return_value=[local]):
+        with patch('tux_access.auth.api.catalog', return_value={'products': [{'title': 'Maschine 3', 'upid': 'maschine-id'}]}), \
+             patch('tux_access.auth.profile.profile', side_effect=profile), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[local]):
             self.window._events.put(('login', {'access_token': 'private-token', 'refresh_token': 'private-refresh'}))
             self.window.poll()
             self.settle()
@@ -626,9 +626,9 @@ class ProductActionTests(unittest.TestCase):
 
     def test_profile_failure_does_not_discard_account_catalog(self):
         self.window._token = 'private-token'
-        with patch('account_api.catalog', return_value={'products': [self.product]}), \
-             patch('account_profile.profile', side_effect=RuntimeError('Private profile unavailable')), \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.auth.api.catalog', return_value={'products': [self.product]}), \
+             patch('tux_access.auth.profile.profile', side_effect=RuntimeError('Private profile unavailable')), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window.account_catalog()
             self.settle()
         self.assertEqual(self.window.products, [self.product])
@@ -642,7 +642,7 @@ class ProductActionTests(unittest.TestCase):
         self.window.table.setCurrentCell(0, 0)
         self.window.details()
         self.assertIn('Maschine 3 installation is not available yet', self.window.detail.toPlainText())
-        with patch('install_coordinator.install_product') as installer:
+        with patch('tux_access.installation.install.install_product') as installer:
             self.window.product_actions[0].click()
             installer.assert_not_called()
         self.assertIs(self.window.pages.currentWidget(), self.window._settings_page)
@@ -650,7 +650,7 @@ class ProductActionTests(unittest.TestCase):
         self.assertIn('Maschine 3 installation is not available yet', self.window.status.text())
 
     def test_explicit_advanced_options_only_download_selected_artifact(self):
-        from download_catalog import Artifact
+        from tux_access.downloads.catalog import Artifact
         product = {'title': 'Maschine 3', 'upid': 'maschine-id'}
         selected = Artifact('maschine-id', 'Maschine 3', '3.0', 'win', 'x86_64', 12, 'Maschine.zip', 'installer', '/private/artifact')
         other = Artifact('other-id', 'Other', '1.0', 'win', 'x86_64', 12, 'Other.zip', 'installer', '/private/other')
@@ -659,9 +659,9 @@ class ProductActionTests(unittest.TestCase):
         self.window.render()
         self.assertTrue(self.window.product_actions[0].isEnabled())
         self.assertEqual(self.window.product_actions[0].text(), 'Install')
-        with patch('download_catalog.available_artifacts', return_value=[selected, other]), \
+        with patch('tux_access.downloads.catalog.available_artifacts', return_value=[selected, other]), \
              patch.object(QtWidgets.QDialog, 'exec') as modal, \
-             patch('install_coordinator.install_product') as installer:
+             patch('tux_access.installation.install.install_product') as installer:
             self.window.open_install_options(product)
             self.settle()
             self.assertIs(self.window.pages.currentWidget(), self.window._settings_page)
@@ -677,7 +677,7 @@ class ProductActionTests(unittest.TestCase):
 
     def test_inline_choices_prefer_platform_then_latest_numeric_version_without_automatic_download(self):
         from dataclasses import replace
-        from download_catalog import Artifact
+        from tux_access.downloads.catalog import Artifact
         product = {'title': 'Massive', 'upid': 'massive-id'}
         old_pc = Artifact('massive-id', 'Massive', '1.5.12', 'pc', 'x86_64', 12, 'old.zip', 'installer', '/private/old')
         latest_pc = replace(old_pc, version='1.7.0', platform='win', target_file='latest.zip')
@@ -690,7 +690,7 @@ class ProductActionTests(unittest.TestCase):
                                         (True, [linux, latest_pc, old_pc, mac])):
             with self.subTest(prefer_native=prefer_native), \
                  patch.object(self.window, 'download_artifact') as download, \
-                 patch('install_coordinator.install_product') as install, \
+                 patch('tux_access.installation.install.install_product') as install, \
                  patch.object(QtWidgets.QDialog, 'exec') as modal:
                 self.window.set_view('all')
                 self.window.settings = replace(self.window.settings, prefer_native=prefer_native)
@@ -727,7 +727,7 @@ class ProductActionTests(unittest.TestCase):
         self.window.products = [product]
         self.window._merge_installed([record])
         self.window.render()
-        with patch('wine_manager.WineManager') as manager:
+        with patch('tux_access.installation.wine.kontakt.WineManager') as manager:
             manager.return_value.launch_record.return_value.pid = 123
             self.window.product_actions[0].click()
             self.settle()
@@ -740,11 +740,11 @@ class ProductActionTests(unittest.TestCase):
     def test_switch_account_requests_fresh_authorization_and_cancel_keeps_session(self):
         self.window._token = 'private-existing-token'
         self.window._update_account_button()
-        from oauth_browser import browser_login_banner
+        from tux_access.auth.browser import browser_login_banner
         with tempfile.TemporaryDirectory() as directory:
             login = browser_login_banner(self.window, opener=lambda url: True,
                                          prepare_handler=lambda: None, runtime_dir=Path(directory))
-            with patch('oauth_login.login_banner', return_value=login) as factory:
+            with patch('tux_access.auth.login.login_banner', return_value=login) as factory:
                 self.window.switch_account_action.trigger()
                 factory.assert_called_once_with(self.window, force_login=True)
             login.cancel_button.click()
@@ -755,13 +755,13 @@ class ProductActionTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == 'posix', 'Private Linux browser callback required')
     def test_signin_banner_is_inline_nonmodal_and_duplicate_click_keeps_one_receiver(self):
-        from oauth_browser import browser_login_banner
+        from tux_access.auth.browser import browser_login_banner
         with tempfile.TemporaryDirectory() as directory:
             opened = []
             banner = browser_login_banner(self.window, opener=lambda url: opened.append(url) or True,
                                           prepare_handler=lambda: None, runtime_dir=Path(directory))
             self.window.show()
-            with patch('oauth_login.login_banner', return_value=banner), patch.object(QtWidgets.QDialog, 'exec') as modal:
+            with patch('tux_access.auth.login.login_banner', return_value=banner), patch.object(QtWidgets.QDialog, 'exec') as modal:
                 self.window.sign_in()
                 self.window.sign_in()
                 self.assertIs(self.window._login_banner, banner)
@@ -778,9 +778,9 @@ class ProductActionTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == 'posix', 'Private Linux browser callback required')
     def test_banner_callback_exchanges_off_ui_thread_then_refreshes_catalog(self):
-        from oauth_browser import browser_login_banner
-        from oauth_callback import forward_callback
-        from account_auth import APP_REDIRECT
+        from tux_access.auth.browser import browser_login_banner
+        from tux_access.auth.callback import forward_callback
+        from tux_access.auth.oauth import APP_REDIRECT
         from urllib.parse import urlencode
         with tempfile.TemporaryDirectory() as directory:
             banner = browser_login_banner(self.window, opener=lambda url: True,
@@ -790,10 +790,10 @@ class ProductActionTests(unittest.TestCase):
                 self.assertNotEqual(threading.get_ident(), caller)
                 self.assertEqual(args[0], 'mock-code')
                 return {'access_token': 'private-new-token'}
-            with patch('oauth_login.login_banner', return_value=banner), \
-                 patch('account_auth.exchange_code', side_effect=exchange), \
-                 patch('account_api.catalog', return_value={'products': [{'title': 'Phasis'}]}), \
-                 patch('install_coordinator.installed_catalog', return_value=[]):
+            with patch('tux_access.auth.login.login_banner', return_value=banner), \
+                 patch('tux_access.auth.oauth.exchange_code', side_effect=exchange), \
+                 patch('tux_access.auth.api.catalog', return_value={'products': [{'title': 'Phasis'}]}), \
+                 patch('tux_access.installation.install.installed_catalog', return_value=[]):
                 self.window.sign_in()
                 uri = APP_REDIRECT + '?' + urlencode({'code': 'mock-code', 'state': banner.state})
                 self.assertTrue(forward_callback(uri, Path(directory)))
@@ -806,11 +806,11 @@ class ProductActionTests(unittest.TestCase):
             self.assertTrue(self.window.sign_in_area.isHidden())
 
     def test_close_during_browser_wait_releases_receiver_without_hanging(self):
-        from oauth_browser import browser_login_banner
+        from tux_access.auth.browser import browser_login_banner
         with tempfile.TemporaryDirectory() as directory:
             banner = browser_login_banner(self.window, opener=lambda url: True,
                                           prepare_handler=lambda: None, runtime_dir=Path(directory))
-            with patch('oauth_login.login_banner', return_value=banner):
+            with patch('tux_access.auth.login.login_banner', return_value=banner):
                 self.window.sign_in()
             self.window.close()
             self.assertIsNone(self.window._login_banner)

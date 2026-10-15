@@ -1,5 +1,5 @@
 import unittest
-from account_api import catalog, AccountApiError, http_catalog
+from tux_access.auth.api import catalog, AccountApiError, http_catalog
 
 class AccountApiTests(unittest.TestCase):
     def test_observed_envelope_and_private_field_exclusion(self):

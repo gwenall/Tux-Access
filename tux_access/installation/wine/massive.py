@@ -1,6 +1,6 @@
 """Qualified exact original Massive 1.7.0 application profile."""
-from massive_170_plan import load_plan, load_hashes, PLAN_SHA256, HASHES_SHA256
-from ni_application_manager import (ApplicationProfile, BundledRuntime, InstallerArtifact,
+from tux_access.installation.plans.massive_170 import load_plan, load_hashes, PLAN_SHA256, HASHES_SHA256
+from tux_access.installation.wine.application import (ApplicationProfile, BundledRuntime, InstallerArtifact,
                                     NiApplicationManager, PublicRegistryValue)
 
 ZIP_SIZE = 209250331

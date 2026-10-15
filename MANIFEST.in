@@ -1,6 +1,6 @@
 recursive-include docs *.md *.txt *.json *.png
-recursive-include tools *.py *.sh
+recursive-include tools *.py
 recursive-include tests *.py
-recursive-include assets *.png
 include assets/tuxaccess.desktop
-include ntk_readonly.proto
+recursive-include tux_access *.png *.sh *.proto
+include launcher.py

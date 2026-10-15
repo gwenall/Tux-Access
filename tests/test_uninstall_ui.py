@@ -9,17 +9,17 @@ try:
     from PySide6 import QtWidgets
 except ImportError:
     raise unittest.SkipTest('Qt desktop extra is not installed')
-from app_settings import default_settings
-from download_manager import DownloadCancelled
-from qt_launcher import Launcher
+from tux_access.settings import default_settings
+from tux_access.downloads.manager import DownloadCancelled
+from tux_access.ui.main_window import Launcher
 
 app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
 class UninstallUiTests(unittest.TestCase):
     def setUp(self):
-        with patch('app_settings.load_settings', return_value=default_settings()), \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.settings.load_settings', return_value=default_settings()), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window = Launcher()
         self.window._timer.stop()
         self.settle()
@@ -52,7 +52,7 @@ class UninstallUiTests(unittest.TestCase):
     def test_uninstall_requires_inline_confirmation_and_cancel_does_not_remove_files(self):
         self.assertEqual(self.window.product_actions[0].text(), 'Launch')
         self.assertTrue(self.window.uninstall_button.isEnabled())
-        with patch('removal_coordinator.uninstall_product') as remove, patch.object(QtWidgets.QDialog, 'exec') as modal:
+        with patch('tux_access.installation.remove.uninstall_product') as remove, patch.object(QtWidgets.QDialog, 'exec') as modal:
             self.window.uninstall_button.click()
             self.assertFalse(self.window.uninstall_panel.isHidden())
             self.assertIn('Saved projects, content and settings will be retained', self.window.uninstall_notice.text())
@@ -73,7 +73,7 @@ class UninstallUiTests(unittest.TestCase):
             options['progress']({'stage': 'verifying_removal', 'current': 1, 'total': 2, 'message': 'Checking files'})
             options['progress']({'stage': 'removing', 'message': 'Removing app files'})
             return self.result()
-        with patch('removal_coordinator.uninstall_product', side_effect=remove) as remover:
+        with patch('tux_access.installation.remove.uninstall_product', side_effect=remove) as remover:
             self.window.uninstall_button.click()
             self.window.uninstall_confirm_button.click()
             self.settle()
@@ -96,7 +96,7 @@ class UninstallUiTests(unittest.TestCase):
         self.window.render()
         self.window.table.setCurrentCell(0, 0)
         self.window.details()
-        with patch('removal_coordinator.uninstall_product', return_value=self.result()):
+        with patch('tux_access.installation.remove.uninstall_product', return_value=self.result()):
             self.window.uninstall_button.click()
             self.window.uninstall_confirm_button.click()
             self.settle()
@@ -112,14 +112,14 @@ class UninstallUiTests(unittest.TestCase):
         self.window.table.setCurrentCell(0, 0)
         self.window.details()
         result = {**self.result([legacy]), 'title': 'Kontakt 8', 'version': '8.9.0'}
-        with patch('removal_coordinator.uninstall_product', return_value=result):
+        with patch('tux_access.installation.remove.uninstall_product', return_value=result):
             self.window.uninstall_button.click()
             self.window.uninstall_confirm_button.click()
             self.settle()
         self.assertEqual(self.window.product_actions[0].text(), 'Launch')
         self.assertFalse(self.window.uninstall_button.isEnabled())
         self.assertIn('Another verified installation remains', self.window.status.text())
-        with patch('removal_coordinator.uninstall_product') as remove:
+        with patch('tux_access.installation.remove.uninstall_product') as remove:
             self.window.request_uninstall(self.window.products[0])
             remove.assert_not_called()
             self.assertTrue(self.window.uninstall_panel.isHidden())
@@ -139,8 +139,8 @@ class UninstallUiTests(unittest.TestCase):
     def test_cancelled_or_failed_removal_refreshes_actual_remaining_files(self):
         for error in (DownloadCancelled('Removal cancelled'), RuntimeError('Changed file preserved')):
             with self.subTest(error=type(error).__name__), \
-                 patch('removal_coordinator.uninstall_product', side_effect=error), \
-                 patch('install_coordinator.installed_catalog', return_value=[self.record]):
+                 patch('tux_access.installation.remove.uninstall_product', side_effect=error), \
+                 patch('tux_access.installation.install.installed_catalog', return_value=[self.record]):
                 self.window.request_uninstall(self.window.products[0])
                 self.window.uninstall_confirm_button.click()
                 self.settle()
@@ -152,14 +152,14 @@ class UninstallUiTests(unittest.TestCase):
     def test_scan_failure_does_not_claim_zero_installed_or_offer_immediate_reinstall(self):
         result = self.result()
         result.update(_installed=None, _scan_warning='Refresh the library to check other copies.')
-        with patch('removal_coordinator.uninstall_product', return_value=result):
+        with patch('tux_access.installation.remove.uninstall_product', return_value=result):
             self.window.uninstall_button.click()
             self.window.uninstall_confirm_button.click()
             self.settle()
         self.assertEqual(self.window.product_actions[0].text(), 'Check state')
         self.assertFalse(self.window.product_actions[0].isEnabled())
         self.assertIn('Refresh the library', self.window.status.text())
-        with patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window.account_catalog()  # Offline Refresh checks local files.
             self.settle()
         self.assertEqual(self.window.product_actions[0].text(), 'Install')

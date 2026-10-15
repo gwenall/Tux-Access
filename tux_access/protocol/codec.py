@@ -4,8 +4,8 @@ No message is sent by this module. Unknown fields are skipped, as protobuf
 requires. Decoded values use descriptor field names and preserve enum numbers.
 """
 import struct
-from ntk_protocol import fields, varint, message_field, ProtocolError, _read_varint
-from ntk_schema_data import SCHEMA
+from tux_access.protocol.ntk import fields, varint, message_field, ProtocolError, _read_varint
+from tux_access.protocol.schema import SCHEMA
 
 PREFIX = '.ni.ntk.daemon.proto.'
 VARINT_TYPES = {'bool', 'enum', 'uint32', 'uint64', 'int64'}

@@ -15,9 +15,9 @@ import stat
 import subprocess
 import uuid
 
-from app_settings import validate_settings
-from download_manager import DownloadCancelled
-from launcher import product_values
+from tux_access.settings import validate_settings
+from tux_access.downloads.manager import DownloadCancelled
+from tux_access.catalog.products import product_values
 
 
 class RemovalError(RuntimeError):
@@ -34,7 +34,7 @@ def can_uninstall(product, settings):
     native = {'ni-phasis': 'phasis', 'ni-reaktor': 'reaktor6'}
     if product.get('nativePackage') in native and product.get('source') == 'native-install':
         return _title(product) in (native[product['nativePackage']], 'reaktor6fx')
-    from application_backends import wine_spec
+    from tux_access.installation.backends import wine_spec
     return (product.get('backend') == 'wine' and product.get('managed') is True
             and wine_spec(product) is not None)
 
@@ -70,7 +70,7 @@ def _identity(info):
 
 
 def _snapshot(prefix, hashes, progress, cancelled):
-    from wine_manager import _relative
+    from tux_access.installation.wine.kontakt import _relative
     identities = {}
     descriptor = os.open(prefix, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
@@ -99,8 +99,8 @@ def _snapshot(prefix, hashes, progress, cancelled):
 
 
 def _remove_wine(product, settings, progress, cancelled):
-    from wine_manager import _ancestry, _directory, _publish_directory
-    from application_backends import wine_spec
+    from tux_access.installation.wine.kontakt import _ancestry, _directory, _publish_directory
+    from tux_access.installation.backends import wine_spec
     spec = wine_spec(product)
     manager = spec.manager(settings)
     receipt_name = spec.receipt_name
@@ -132,7 +132,7 @@ def _remove_wine(product, settings, progress, cancelled):
     try:
         # Revalidate the complete set before the first unlink. Never traverse a
         # user-created link or recurse through unrelated files in the prefix.
-        from wine_manager import _relative
+        from tux_access.installation.wine.kontakt import _relative
         for relative, expected in identities.items():
             parts = ('drive_c', *_relative(relative).parts)
             with _parent(descriptor, parts[:-1]) as parent:
@@ -152,7 +152,7 @@ def _remove_wine(product, settings, progress, cancelled):
 
 
 def _remove_native(product, settings, progress, cancelled):
-    from arch_package import installed_products
+    from tux_access.installation.native.arch import installed_products
     known = next((item for item in installed_products() if item.get('nativePackage') == product.get('nativePackage')), None)
     if known is None or not Path('/etc/arch-release').is_file():
         raise RemovalError('This launcher-owned native package is not installed on Arch Linux.')
@@ -177,7 +177,7 @@ def uninstall_product(product, settings, progress=None, cancelled=None):
     _cancel(cancelled)
     operation = _remove_wine if product.get('backend') == 'wine' else _remove_native
     result = operation(product, settings, progress, cancelled)
-    from install_coordinator import installed_catalog
+    from tux_access.installation.install import installed_catalog
     try:
         result['_installed'] = installed_catalog(settings)
     except Exception:

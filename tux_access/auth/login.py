@@ -2,7 +2,7 @@
 
 
 def login_banner(parent=None, *, force_login=False):
-    from oauth_browser import browser_login_banner
+    from tux_access.auth.browser import browser_login_banner
     return browser_login_banner(parent, force_login=force_login)
 
 

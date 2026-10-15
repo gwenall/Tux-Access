@@ -1,7 +1,7 @@
 import struct
 import unittest
-from schema_codec import encode, decode
-from ntk_protocol import encode_request, message_field, ProtocolError
+from tux_access.protocol.codec import encode, decode
+from tux_access.protocol.ntk import encode_request, message_field, ProtocolError
 
 class SchemaCodecTests(unittest.TestCase):
     def test_reference_requests_match_observed_subset(self):

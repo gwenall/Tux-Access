@@ -7,7 +7,7 @@ import json
 import urllib.error
 import urllib.request
 from urllib.parse import urlsplit, urlencode
-from account_auth import AUTH_ORIGIN, CLIENT_ID
+from tux_access.auth.oauth import AUTH_ORIGIN, CLIENT_ID
 
 class AuthTransportError(RuntimeError):
     pass

@@ -1,7 +1,7 @@
 """Fixed qualified Wine product dispatch shared by install, launch and removal."""
 from dataclasses import dataclass
 
-from launcher import product_values
+from tux_access.catalog.products import product_values
 
 
 @dataclass(frozen=True)
@@ -23,15 +23,15 @@ def title_key(product):
 def wine_spec(product):
     key = title_key(product)
     if key in ('kontakt8', 'kontakt8player'):
-        from wine_manager import WineManager, ZIP_SIZE, ZIP_SHA256, RECEIPT
+        from tux_access.installation.wine.kontakt import WineManager, ZIP_SIZE, ZIP_SHA256, RECEIPT
         return WineSpec('8.9.0', 'Kontakt_8_Installer.zip', ZIP_SIZE, ZIP_SHA256,
                         WineManager, 'install_kontakt_890', RECEIPT)
     if key == 'maschine2':
-        from maschine_manager import MaschineManager, ZIP_SIZE, ZIP_SHA256, RECEIPT, load_hashes
+        from tux_access.installation.wine.maschine import MaschineManager, ZIP_SIZE, ZIP_SHA256, RECEIPT, load_hashes
         return WineSpec('2.18.4', 'Maschine_2_Installer.zip', ZIP_SIZE, ZIP_SHA256,
                         MaschineManager, 'install_maschine_2184', RECEIPT, load_hashes)
     if key == 'massive':
-        from massive_manager import MassiveManager, ZIP_SIZE, ZIP_SHA256, PROFILE
+        from tux_access.installation.wine.massive import MassiveManager, ZIP_SIZE, ZIP_SHA256, PROFILE
         return WineSpec(PROFILE.version, 'Massive_Installer.zip', ZIP_SIZE, ZIP_SHA256,
                         MassiveManager, 'install_massive_170', '.native-access-linux-massive.json', PROFILE.load_hashes)
     return None

@@ -4,13 +4,12 @@ import hashlib
 import tempfile
 import unittest
 from unittest.mock import patch
-import sidebar_art
+import tux_access.ui.sidebar_art as sidebar_art
 
 
 class SidebarArtTests(unittest.TestCase):
     def test_bundled_pool_contains_every_named_asset_without_duplicate_image_weighting(self):
-        root = Path(sidebar_art.__file__).resolve().parent
-        found = sidebar_art.find_artwork(root)
+        found = sidebar_art.find_artwork()
         self.assertEqual(tuple(path.name for path in found), sidebar_art.ART_NAMES)
         digests = [hashlib.sha256(path.read_bytes()).digest() for path in found]
         self.assertEqual(len(digests), len(set(digests)))
@@ -35,7 +34,7 @@ class SidebarArtTests(unittest.TestCase):
             second = sidebar_art.choose_artwork(artwork, cache, chooser=lambda choices: choices[0])
             self.assertNotEqual(first, second)
             self.assertEqual(cache.read_text().strip(), second.name)
-            with patch('sidebar_art.tempfile.mkstemp', side_effect=PermissionError('Read-only cache')):
+            with patch('tux_access.ui.sidebar_art.tempfile.mkstemp', side_effect=PermissionError('Read-only cache')):
                 third = sidebar_art.choose_artwork(artwork, cache, chooser=lambda choices: choices[0])
             self.assertNotEqual(second, third)
             self.assertEqual(cache.read_text().strip(), second.name)
@@ -43,8 +42,8 @@ class SidebarArtTests(unittest.TestCase):
     def test_process_keeps_one_choice_even_when_windows_or_views_are_recreated(self):
         chosen = Path('/bundled/assets/tux/tux-keyboard-player.png')
         with patch.object(sidebar_art, '_startup_art', sidebar_art._UNSET), \
-             patch('sidebar_art.find_artwork', return_value=(chosen,)), \
-             patch('sidebar_art.choose_artwork', return_value=chosen) as choose:
+             patch('tux_access.ui.sidebar_art.find_artwork', return_value=(chosen,)), \
+             patch('tux_access.ui.sidebar_art.choose_artwork', return_value=chosen) as choose:
             self.assertEqual(sidebar_art.startup_artwork(), chosen)
             self.assertEqual(sidebar_art.startup_artwork(), chosen)
             choose.assert_called_once()

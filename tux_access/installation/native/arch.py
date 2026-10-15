@@ -17,7 +17,7 @@ import stat
 import tarfile
 import tempfile
 
-from package_inspection import _elf, _members, inspect_deb
+from tux_access.installation.native.inspection import _elf, _members, inspect_deb
 
 PROFILES = {
     'ni-phasis': ('Phasis', ('Phasis.so',)),

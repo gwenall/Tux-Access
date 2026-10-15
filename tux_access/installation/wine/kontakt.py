@@ -18,8 +18,8 @@ import tempfile
 import time
 import zipfile
 
-from kontakt_890_plan import load_plan, PLAN_SHA256
-from wine_display import ensure_display, DisplayError
+from tux_access.installation.plans.kontakt_890 import load_plan, PLAN_SHA256
+from tux_access.installation.wine.display import ensure_display, DisplayError
 
 ZIP_SHA256 = '3c711e00494a369cce1604d9640598999612f08af422a5f39c9bd9163e29728d'
 ZIP_SIZE = 1166054646

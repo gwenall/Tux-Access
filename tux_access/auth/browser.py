@@ -8,8 +8,9 @@ import sys
 import time
 import webbrowser
 
-from account_auth import APP_REDIRECT, BROWSER_REDIRECT, authorize_url, callback_code, new_verifier
-from oauth_callback import CallbackReceiver, CallbackError
+from tux_access.auth.oauth import APP_REDIRECT, BROWSER_REDIRECT, authorize_url, callback_code, new_verifier
+from tux_access.auth.callback import CallbackReceiver, CallbackError
+from tux_access import __file__ as package_file
 
 HANDLER_ID = 'native-access-linux-oauth.desktop'
 
@@ -43,7 +44,7 @@ def register_browser_callback():
     if destination.is_symlink():
         raise RuntimeError('The browser callback launcher is not a regular file.')
     command = (_desktop_quote(sys.executable) + ' ' +
-               _desktop_quote(str(Path(__file__).with_name('launcher.py').resolve())) +
+               _desktop_quote(str(Path(package_file).with_name('__main__.py').resolve())) +
                ' --oauth-callback %u')
     text = ('[Desktop Entry]\nType=Application\nName=Tux Access\n'
             'NoDisplay=true\nTerminal=false\nExec=' + command + '\n'

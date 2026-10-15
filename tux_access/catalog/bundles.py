@@ -1,7 +1,7 @@
 """Collection membership is distinct from account installer authorization."""
 import re
 
-from bundle_catalog_data import BUNDLES
+from tux_access.catalog.bundle_data import BUNDLES
 
 SOURCE_LABEL = 'NI catalog reference, 14 October 2026'
 

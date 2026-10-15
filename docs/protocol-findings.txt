@@ -57,7 +57,7 @@ Component fields are name enum1, current_path string2, is_broken bool3.
 Live read-only verification returned 16 binary paths and 251 components,
 zero marked broken. Product type labels now use the daemon descriptor's enum.
 Three additional tests pass (eight total); version0.2 wheel builds successfully.
-The documented subset is independently presented in ntk_readonly.proto.
+The documented subset is independently presented in tux_access/protocol/ntk_readonly.proto.
 
 Offline printable strings also contain candidate routes /v1/users/me/products,
 /v1/auth/token, /v1/auth/refresh_token, /oauth/token, /oauth/device/code and

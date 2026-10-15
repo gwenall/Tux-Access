@@ -1,6 +1,6 @@
 import unittest
-from download_catalog import available_artifacts, select_artifacts
-from account_api import AccountApiError
+from tux_access.downloads.catalog import available_artifacts, select_artifacts
+from tux_access.auth.api import AccountApiError
 
 class DownloadCatalogTests(unittest.TestCase):
     def fixture(self):

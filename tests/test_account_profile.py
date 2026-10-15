@@ -3,8 +3,8 @@ import json
 from email.message import Message
 import unittest
 from unittest.mock import Mock
-from account_profile import profile, PROFILE_URL
-from account_api import AccountApiError
+from tux_access.auth.profile import profile, PROFILE_URL
+from tux_access.auth.api import AccountApiError
 
 
 class Response(io.BytesIO):

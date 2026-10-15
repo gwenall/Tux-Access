@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/tux/tux-violin-bow-tie.png" width="112" alt="Tux playing the violin">
+<img src="tux_access/resources/artwork/tux-violin-bow-tie.png" width="112" alt="Tux playing the violin">
 
 # Tuxaccess
 
@@ -137,7 +137,7 @@ The prototype stays in Python while its behavior and interfaces are tested.
 From the source directory:
 
 ```sh
-python launcher.py
+python -m tux_access
 QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -v
 ```
 
@@ -145,11 +145,40 @@ Tests use mocks for account operations and do not contact NI. Optional read-only
 reference queries require a running NTK daemon on a loopback endpoint:
 
 ```sh
-python launcher.py --probe
-python launcher.py --inspect catalog
-python launcher.py --inspect preferences
-python launcher.py --inspect-package package.deb --expected-sha256 HASH
+python -m tux_access --probe
+python -m tux_access --inspect catalog
+python -m tux_access --inspect preferences
+python -m tux_access --inspect-package package.deb --expected-sha256 HASH
 ```
+
+Application code lives in the `tux_access` package:
+
+```text
+tux_access/
+  cli.py                  Command-line options and desktop startup
+  settings.py             Persistent preferences and path validation
+  ui/                     Qt main window and sidebar artwork
+  auth/                   Account APIs, OAuth and browser callbacks
+  catalog/                Product normalization, applications and bundles
+  downloads/              Artifact discovery and verified downloads
+  installation/
+    install.py            Installation orchestration
+    remove.py             Removal orchestration
+    backends.py           Qualified product dispatch
+    native/               Linux package inspection and Arch installation
+    wine/                 Wine display, runtimes and product installers
+    plans/                Pinned installer plans and payload hashes
+  protocol/               NTK client, codec and recovered schema
+  resources/              Bundled artwork and native preparation helper
+```
+
+`tests/` contains automated regression checks, `tools/` contains development
+utilities, and `assets/` contains the desktop entry. Runtime artwork and helpers
+ship inside the Python package so source and installed builds use the same paths.
+`python launcher.py` remains a compatibility entrypoint; new commands should use
+`python -m tux_access`. Both `tuxaccess` and `native-access-linux` are installed
+console commands. Existing user settings, caches and Wine prefixes keep their
+previous locations.
 
 The reference bridge is a development aid, **not required for Linux browser
 sign-in**. There is no native Linux NI daemon implementation in this project.

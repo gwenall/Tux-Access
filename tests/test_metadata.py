@@ -1,6 +1,6 @@
 import unittest
-from ntk_protocol import decode_response, message_field, ProtocolError
-from launcher import product_values
+from tux_access.protocol.ntk import decode_response, message_field, ProtocolError
+from tux_access.catalog.products import product_values
 
 class MetadataTests(unittest.TestCase):
     def test_components_and_binary_path(self):

@@ -5,11 +5,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from app_settings import default_settings
-from download_catalog import Artifact
-from download_manager import DownloadSpec, DownloadCancelled
-from install_coordinator import can_install, install_product, installed_catalog, select_artifact, InstallError
-from maschine_manager import MaschineManager
+from tux_access.settings import default_settings
+from tux_access.downloads.catalog import Artifact
+from tux_access.downloads.manager import DownloadSpec, DownloadCancelled
+from tux_access.installation.install import can_install, install_product, installed_catalog, select_artifact, InstallError
+from tux_access.installation.wine.maschine import MaschineManager
 
 
 def artifact(title='Phasis', platform='linux-x86_64', name='Phasis.deb', version='1.2.1', size=7):
@@ -18,17 +18,17 @@ def artifact(title='Phasis', platform='linux-x86_64', name='Phasis.deb', version
 
 class InstallCoordinatorTests(unittest.TestCase):
     def setUp(self):
-        patcher = patch('maschine_manager.MaschineManager')
+        patcher = patch('tux_access.installation.wine.maschine.MaschineManager')
         self.maschine = patcher.start()
         self.addCleanup(patcher.stop)
         self.maschine.return_value.installation_status.return_value = {'status': 'not installed'}
-        patcher = patch('massive_manager.MassiveManager')
+        patcher = patch('tux_access.installation.wine.massive.MassiveManager')
         self.massive = patcher.start()
         self.addCleanup(patcher.stop)
         self.massive.return_value.installation_status.return_value = {'status': 'not installed'}
 
     def test_massive_selects_only_the_exact_qualified_pc_installer(self):
-        from massive_manager import ZIP_SIZE
+        from tux_access.installation.wine.massive import ZIP_SIZE
         product = {'title': 'Massive', 'upid': 'same-id'}
         known = artifact('Massive 1.7.0', 'pc', 'Massive_Installer.zip', '1.7.0', ZIP_SIZE)
         self.assertEqual(select_artifact(product, [known], default_settings()), (known, 'wine'))
@@ -39,7 +39,7 @@ class InstallCoordinatorTests(unittest.TestCase):
         self.assertFalse(can_install(product, replace(default_settings(), manage_wine=False)))
 
     def test_maschine_profile_accepts_exact_pc_build_and_rejects_version_or_payload_change(self):
-        from maschine_manager import ZIP_SIZE
+        from tux_access.installation.wine.maschine import ZIP_SIZE
         product = {'title': 'Maschine 2', 'upid': 'same-id'}
         known = artifact('Maschine 2.18.4', 'pc', 'Maschine_2_Installer.zip', '2.18.4', ZIP_SIZE)
         self.assertEqual(select_artifact(product, [known], default_settings()), (known, 'wine'))
@@ -49,12 +49,12 @@ class InstallCoordinatorTests(unittest.TestCase):
                 select_artifact(product, [changed], default_settings())
 
     def test_maschine_metalink_digest_change_is_rejected_before_download_or_install(self):
-        from maschine_manager import ZIP_SIZE
+        from tux_access.installation.wine.maschine import ZIP_SIZE
         known = artifact('Maschine 2.18.4', 'pc', 'Maschine_2_Installer.zip', '2.18.4', ZIP_SIZE)
         self.maschine.return_value.preflight.return_value = []
         spec = DownloadSpec(known.target_file, ZIP_SIZE, '0' * 64, ())
-        with patch('install_coordinator.resolve_artifact', return_value=spec), \
-             patch('install_coordinator.download') as download:
+        with patch('tux_access.installation.install.resolve_artifact', return_value=spec), \
+             patch('tux_access.installation.install.download') as download:
             with self.assertRaises(InstallError):
                 install_product({'title': 'Maschine 2', 'upid': 'same-id'}, 'mock-session', default_settings(), [known])
             download.assert_not_called()
@@ -63,8 +63,8 @@ class InstallCoordinatorTests(unittest.TestCase):
     def test_inventory_prefers_managed_kontakt_without_duplicate_legacy_row(self):
         managed = {'title': 'Kontakt 8', 'installed': True, 'status': 'installed',
                    'executable': '/managed/Kontakt.exe', 'managed': True}
-        with patch('arch_package.installed_products', return_value=[]), \
-             patch('wine_manager.WineManager') as backend:
+        with patch('tux_access.installation.native.arch.installed_products', return_value=[]), \
+             patch('tux_access.installation.wine.kontakt.WineManager') as backend:
             backend.return_value.installation_status.return_value = managed
             records = installed_catalog(default_settings())
             backend.return_value.detect_legacy_installation.assert_not_called()
@@ -75,8 +75,8 @@ class InstallCoordinatorTests(unittest.TestCase):
     def test_inventory_uses_verified_legacy_when_managed_prefix_is_absent(self):
         legacy = {'title': 'Kontakt 8', 'installed': True, 'status': 'installed',
                   'executable': '/legacy/Kontakt.exe', 'managed': False}
-        with patch('arch_package.installed_products', return_value=[]), \
-             patch('wine_manager.WineManager') as backend:
+        with patch('tux_access.installation.native.arch.installed_products', return_value=[]), \
+             patch('tux_access.installation.wine.kontakt.WineManager') as backend:
             backend.return_value.installation_status.return_value = {'status': 'not installed'}
             backend.return_value.detect_legacy_installation.return_value = legacy
             records = installed_catalog(default_settings())
@@ -103,10 +103,10 @@ class InstallCoordinatorTests(unittest.TestCase):
             settings = replace(default_settings(), download_directory=root)
             spec = DownloadSpec(installer.name, len(payload), digest, ('https://artifacts-cdn.native-instruments.com/private',))
             stages = []
-            with patch('install_coordinator.resolve_artifact', return_value=spec), \
-                 patch('install_coordinator.download') as downloader, \
-                 patch('install_coordinator._prepare_native'), \
-                 patch('arch_package.install_verified_vst', return_value={'title': 'Phasis', 'version': '1.2.1'}) as install:
+            with patch('tux_access.installation.install.resolve_artifact', return_value=spec), \
+                 patch('tux_access.installation.install.download') as downloader, \
+                 patch('tux_access.installation.install._prepare_native'), \
+                 patch('tux_access.installation.native.arch.install_verified_vst', return_value={'title': 'Phasis', 'version': '1.2.1'}) as install:
                 result = install_product({'title': 'Phasis'}, 'mock-transient-token', settings, [artifact()],
                                          progress=lambda *args: stages.append(args[0]))
             downloader.assert_not_called()
@@ -122,21 +122,21 @@ class InstallCoordinatorTests(unittest.TestCase):
             installer = root / 'Phasis.deb'
             installer.write_bytes(b'changed')
             spec = DownloadSpec(installer.name, 7, hashlib.sha256(b'fixture').hexdigest(), ())
-            with patch('install_coordinator.resolve_artifact', return_value=spec), \
-                 patch('arch_package.install_verified_vst') as install:
+            with patch('tux_access.installation.install.resolve_artifact', return_value=spec), \
+                 patch('tux_access.installation.native.arch.install_verified_vst') as install:
                 with self.assertRaises(InstallError):
                     install_product({'title': 'Phasis'}, 'mock-session', replace(default_settings(), download_directory=root), [artifact()])
                 install.assert_not_called()
             self.assertEqual(installer.read_bytes(), b'changed')
 
     def test_cancellation_before_network_or_mutation(self):
-        with patch('install_coordinator.available_artifacts') as metadata:
+        with patch('tux_access.installation.install.available_artifacts') as metadata:
             with self.assertRaises(DownloadCancelled):
                 install_product({'title': 'Phasis'}, 'mock-session', default_settings(), cancelled=lambda: True)
             metadata.assert_not_called()
 
     def test_exact_kontakt_build_only_and_wine_disable_prevents_automatic_install(self):
-        from wine_manager import ZIP_SIZE
+        from tux_access.installation.wine.kontakt import ZIP_SIZE
         product = {'title': 'Kontakt 8'}
         known = artifact('Kontakt 8', 'win', 'Kontakt_8_Installer.zip', '8.9.0', ZIP_SIZE)
         self.assertEqual(select_artifact(product, [known], default_settings()), (known, 'wine'))

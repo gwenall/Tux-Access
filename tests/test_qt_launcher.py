@@ -8,22 +8,22 @@ try:
     from PySide6 import QtWidgets
 except ImportError:
     raise unittest.SkipTest('Qt desktop extra is not installed')
-from qt_launcher import Launcher
-from app_settings import default_settings
+from tux_access.ui.main_window import Launcher
+from tux_access.settings import default_settings
 
 app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
 class QtWorkerTests(unittest.TestCase):
     def setUp(self):
-        profile_patch = patch('account_profile.profile', return_value={})
+        profile_patch = patch('tux_access.auth.profile.profile', return_value={})
         self.addCleanup(profile_patch.stop)
         profile_patch.start()
-        artifacts_patch = patch('download_catalog.available_artifacts', return_value=[])
+        artifacts_patch = patch('tux_access.downloads.catalog.available_artifacts', return_value=[])
         self.addCleanup(artifacts_patch.stop)
         artifacts_patch.start()
-        with patch('app_settings.load_settings', return_value=default_settings()), \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.settings.load_settings', return_value=default_settings()), \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window = Launcher()
         self.settle()
 
@@ -39,18 +39,18 @@ class QtWorkerTests(unittest.TestCase):
         self.assertFalse(self.window._busy)
 
     def test_connection_and_account_worker(self):
-        with patch('qt_launcher.daemon_snapshot', return_value=([{'title': 'Mock product', 'installed': True}],
+        with patch('tux_access.ui.main_window.daemon_snapshot', return_value=([{'title': 'Mock product', 'installed': True}],
                     {'major': 1, 'minor': 32, 'micro': 0}, 'mock-session')), \
-             patch('account_api.catalog', return_value={'products': [{'title': 'Automatic account mock'}]}) as automatic, \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+             patch('tux_access.auth.api.catalog', return_value={'products': [{'title': 'Automatic account mock'}]}) as automatic, \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window.connect_daemon()
             self.settle()
             automatic.assert_called_once_with('mock-session')
         self.assertEqual(self.window.table.rowCount(), 1)
         self.assertEqual(self.window.table.item(0, 0).text(), 'Automatic account mock')
         self.assertNotIn('mock-session', self.window.status.text())
-        with patch('account_api.catalog', return_value={'products': [{'title': 'Account mock'}]}) as adapter, \
-             patch('install_coordinator.installed_catalog', return_value=[]):
+        with patch('tux_access.auth.api.catalog', return_value={'products': [{'title': 'Account mock'}]}) as adapter, \
+             patch('tux_access.installation.install.installed_catalog', return_value=[]):
             self.window.account_catalog()
             self.settle()
             adapter.assert_called_once_with('mock-session')

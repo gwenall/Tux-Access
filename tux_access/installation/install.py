@@ -5,15 +5,15 @@ from pathlib import Path
 import re
 import stat
 import subprocess
-import sys
+from importlib.resources import files
 import signal
 import tempfile
 import time
 
-from app_settings import validate_settings
-from download_catalog import available_artifacts
-from download_manager import download, resolve_artifact, DownloadCancelled
-from launcher import product_values
+from tux_access.settings import validate_settings
+from tux_access.downloads.catalog import available_artifacts
+from tux_access.downloads.manager import download, resolve_artifact, DownloadCancelled
+from tux_access.catalog.products import product_values
 
 
 class InstallError(RuntimeError):
@@ -25,7 +25,7 @@ def _title(product):
 
 
 def can_install(product, settings):
-    from application_backends import wine_spec
+    from tux_access.installation.backends import wine_spec
     key = _title(product)
     return (key in ('phasis', 'reaktor6', 'reaktor6fx') or
             (settings.manage_wine and wine_spec(product) is not None))
@@ -46,7 +46,7 @@ def select_artifact(product, artifacts, settings):
         matches = [a for a in matches if a.platform.startswith('linux') and a.target_file.lower().endswith('.deb')]
         backend = 'native'
     else:
-        from application_backends import wine_spec
+        from tux_access.installation.backends import wine_spec
         spec = wine_spec(product)
         matches = [a for a in matches if a.platform.casefold().startswith(('pc', 'win')) and a.version == spec.version
                    and a.target_file == spec.filename and a.filesize == spec.size]
@@ -59,9 +59,9 @@ def select_artifact(product, artifacts, settings):
 
 
 def installed_catalog(settings):
-    from arch_package import installed_products
+    from tux_access.installation.native.arch import installed_products
     result = installed_products()
-    from wine_manager import WineManager
+    from tux_access.installation.wine.kontakt import WineManager
     manager = WineManager(settings)
     status = manager.installation_status()
     if not status.get('installed'):
@@ -74,13 +74,13 @@ def installed_catalog(settings):
         status['type'] = 'Application · Wine'
         status['binaryPath'] = status.get('executable', '')
         result.append(status)
-    from maschine_manager import MaschineManager
+    from tux_access.installation.wine.maschine import MaschineManager
     maschine = MaschineManager(settings).installation_status()
     if maschine['status'] != 'not installed':
         result.append({**maschine, 'status': ('Installed · activation unverified' if maschine.get('installed')
                                             else 'Installation needs repair'),
                        'type': 'Application · Wine', 'binaryPath': maschine.get('executable', '')})
-    from massive_manager import MassiveManager
+    from tux_access.installation.wine.massive import MassiveManager
     massive = MassiveManager(settings).installation_status()
     if massive['status'] != 'not installed':
         result.append({**massive, 'status': ('Installed · activation unverified' if massive.get('installed')
@@ -118,15 +118,13 @@ def _cached_download(path, spec, progress, cancelled):
 
 
 def _prepare_native(progress, cancelled):
-    from arch_package import COMPAT_LIBRARIES
+    from tux_access.installation.native.arch import COMPAT_LIBRARIES
     compatibility = Path.home() / '.local/lib/native-access-linux/compat-legacy/lib'
     if all((compatibility / name).is_file() for name in COMPAT_LIBRARIES):
         return
     _check(cancelled)
     progress('native_prepare', 0, 0, 'Preparing the legacy libraries required by this Linux plug-in')
-    source_tool = Path(__file__).parent / 'tools/prepare_arch_compat.sh'
-    installed_tool = Path(sys.prefix) / 'share/native-access-linux/tools/prepare_arch_compat.sh'
-    tool = source_tool if source_tool.is_file() else installed_tool
+    tool = files('tux_access.resources') / 'prepare_arch_compat.sh'
     if not tool.is_file():
         raise InstallError('The native compatibility preparation tool is missing. Reinstall the launcher package.')
     if not Path('/etc/arch-release').is_file():
@@ -176,7 +174,7 @@ def install_product(product, token, settings, artifacts=None, progress=None, can
         artifacts = available_artifacts(token)
     artifact, backend = select_artifact(product, artifacts, settings)
     if backend == 'wine':
-        from application_backends import wine_spec
+        from tux_access.installation.backends import wine_spec
         wine_profile = wine_spec(product)
         manager = wine_profile.manager(settings, progress=progress, cancelled=cancelled)
         install_wine = getattr(manager, wine_profile.install_method)
@@ -211,7 +209,7 @@ def install_product(product, token, settings, artifacts=None, progress=None, can
     _check(cancelled)
     if backend == 'native':
         _prepare_native(progress, cancelled)
-        from arch_package import install_verified_vst
+        from tux_access.installation.native.arch import install_verified_vst
         progress('native_install', 0, 0, 'Authorize the verified Linux package installation')
         result = install_verified_vst(path, spec.sha256)
         result = {**result, 'backend': 'native', 'status': 'Installed · activation unverified', 'activation': 'unverified'}

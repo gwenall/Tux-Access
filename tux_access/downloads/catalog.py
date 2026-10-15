@@ -1,7 +1,7 @@
 """Native account-authorized artifact metadata; no downloading or installation."""
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
-from account_api import http_downloads, AccountApiError
+from tux_access.auth.api import http_downloads, AccountApiError
 
 @dataclass(frozen=True)
 class Artifact:

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
-from app_settings import default_settings, load_settings, save_settings, validate_settings, SettingsError
+from tux_access.settings import default_settings, load_settings, save_settings, validate_settings, SettingsError
 
 
 class SettingsTests(unittest.TestCase):

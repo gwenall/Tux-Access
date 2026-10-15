@@ -6,11 +6,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from app_settings import default_settings
+from tux_access.settings import default_settings
 from dataclasses import replace
-from download_manager import DownloadCancelled
-import removal_coordinator as removal
-from wine_manager import WineManager, RECEIPT
+from tux_access.downloads.manager import DownloadCancelled
+import tux_access.installation.remove as removal
+from tux_access.installation.wine.kontakt import WineManager, RECEIPT
 
 
 @unittest.skipUnless(os.name == 'posix', 'Linux file descriptor removal semantics')
@@ -45,7 +45,7 @@ class RemovalTests(unittest.TestCase):
             with patch.object(WineManager, 'installation_status', return_value=record), \
                  patch.object(WineManager, '_wine', return_value='/fixture/wine'), \
                  patch.object(WineManager, '_stop_prefix') as stop, \
-                 patch('install_coordinator.installed_catalog', return_value=[]):
+                 patch('tux_access.installation.install.installed_catalog', return_value=[]):
                 result = removal.uninstall_product(record, settings, progress=stages.append)
             self.assertFalse(manager.prefix.exists())
             retained = Path(result['retained_directory'])
@@ -112,16 +112,16 @@ class RemovalTests(unittest.TestCase):
         settings = default_settings()
         self.assertFalse(removal.can_uninstall({'title': 'Kontakt 8', 'backend': 'wine', 'managed': False}, settings))
         self.assertFalse(removal.can_uninstall({'title': 'Unknown', 'nativePackage': 'ni-unknown', 'source': 'native-install'}, settings))
-        with patch('removal_coordinator.subprocess.run') as run:
+        with patch('tux_access.installation.remove.subprocess.run') as run:
             with self.assertRaises(removal.RemovalError):
                 removal.uninstall_product({'title': 'Unknown'}, settings)
             run.assert_not_called()
 
     def test_native_removal_is_one_fixed_package_without_shared_dependencies(self):
         record = {'title': 'Phasis', 'version': '1.2.1', 'source': 'native-install', 'nativePackage': 'ni-phasis'}
-        with patch('arch_package.installed_products', return_value=[record]), \
-             patch('removal_coordinator.Path.is_file', side_effect=lambda: True), \
-             patch('removal_coordinator.subprocess.run') as run:
+        with patch('tux_access.installation.native.arch.installed_products', return_value=[record]), \
+             patch('tux_access.installation.remove.Path.is_file', side_effect=lambda: True), \
+             patch('tux_access.installation.remove.subprocess.run') as run:
             run.return_value.returncode = 0
             result = removal._remove_native(record, default_settings(), None, None)
         self.assertEqual(run.call_args.args[0], ['/usr/bin/pkexec', '/usr/bin/pacman', '-R', '--noconfirm', 'native-access-ni-phasis'])

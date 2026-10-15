@@ -9,9 +9,9 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from ni_application_manager import (ApplicationProfile, BundledRuntime, InstallerArtifact,
+from tux_access.installation.wine.application import (ApplicationProfile, BundledRuntime, InstallerArtifact,
                                     NiApplicationManager, PublicRegistryValue, validate_payload)
-from wine_manager import WineError, WineCancelled
+from tux_access.installation.wine.kontakt import WineError, WineCancelled
 
 
 def digest(value): return hashlib.sha256(value).hexdigest()
@@ -66,10 +66,10 @@ class ApplicationManagerTests(unittest.TestCase):
         context.enter_context(patch.object(manager, '_wine', return_value='/fixture/wine'))
         context.enter_context(patch.object(manager, '_run', side_effect=run))
         context.enter_context(patch.object(manager, '_stop_prefix'))
-        context.enter_context(patch('ni_application_manager.shutil.which', return_value='/fixture/7z'))
-        context.enter_context(patch('ni_application_manager.shutil.disk_usage', return_value=SimpleNamespace(free=10*1024**3)))
-        context.enter_context(patch('ni_application_manager._archive_members', return_value=[{'Path': str(n)} for n in range(3)]))
-        context.enter_context(patch('ni_application_manager._publish_directory', side_effect=lambda source, target: source.rename(target)))
+        context.enter_context(patch('tux_access.installation.wine.application.shutil.which', return_value='/fixture/7z'))
+        context.enter_context(patch('tux_access.installation.wine.application.shutil.disk_usage', return_value=SimpleNamespace(free=10*1024**3)))
+        context.enter_context(patch('tux_access.installation.wine.application._archive_members', return_value=[{'Path': str(n)} for n in range(3)]))
+        context.enter_context(patch('tux_access.installation.wine.application._publish_directory', side_effect=lambda source, target: source.rename(target)))
         return context, manager, archive, rows, hashes, calls
 
     def test_complete_original_payload_registration_and_receipt_before_installed(self):
@@ -150,7 +150,7 @@ class ApplicationManagerTests(unittest.TestCase):
                 target.mkdir()
                 (target/'foreign').write_text('preserve')
                 raise WineError('Publication destination exists')
-            with context, patch('ni_application_manager._publish_directory', side_effect=collision):
+            with context, patch('tux_access.installation.wine.application._publish_directory', side_effect=collision):
                 with self.assertRaisesRegex(WineError, 'destination exists'): manager.install(archive)
             self.assertEqual((manager.prefix/'foreign').read_text(), 'preserve')
             self.assertEqual(list(manager.prefix_root.iterdir()), [manager.prefix])
@@ -172,7 +172,7 @@ class ApplicationManagerTests(unittest.TestCase):
             with context:
                 manager.install(archive)
                 record = manager.installation_status()
-                with patch('ni_application_manager.subprocess.Popen', side_effect=AssertionError('no execution')):
+                with patch('tux_access.installation.wine.application.subprocess.Popen', side_effect=AssertionError('no execution')):
                     with self.assertRaises(WineError): manager.launch_record({**record, 'version': '2.0'})
                     with self.assertRaises(WineError): manager.launch_record({**record, 'prefix': '/foreign'})
                     (manager.prefix/'drive_c'/manager.profile.executable_target).write_bytes(b'bad')

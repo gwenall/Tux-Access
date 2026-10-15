@@ -4,8 +4,8 @@ from email.message import Message
 from pathlib import Path
 import tempfile
 import unittest
-from download_catalog import Artifact
-from download_manager import parse_metalink, resolve_artifact, download, DownloadSpec, DownloadError, DownloadCancelled
+from tux_access.downloads.catalog import Artifact
+from tux_access.downloads.manager import parse_metalink, resolve_artifact, download, DownloadSpec, DownloadError, DownloadCancelled
 
 CONTENT=b'independent verified payload fixture'
 DIGEST=hashlib.sha256(CONTENT).hexdigest()

@@ -3,8 +3,8 @@ import json
 import unittest
 from email.message import Message
 from urllib.error import HTTPError
-from auth_transport import AuthHttpTransport, AuthTransportError, refresh_token
-from account_auth import AUTH_ORIGIN
+from tux_access.auth.transport import AuthHttpTransport, AuthTransportError, refresh_token
+from tux_access.auth.oauth import AUTH_ORIGIN
 
 class Response(io.BytesIO):
     def __init__(self,payload,kind='application/json'):

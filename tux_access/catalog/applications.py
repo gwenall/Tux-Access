@@ -36,8 +36,8 @@ def expand_catalog(payload, artifacts):
     Preserve the original account rows and titles as metadata. Do not infer any
     installed state, activation, edition or standalone runtime compatibility.
     """
-    from launcher import catalog_rows
-    from bundle_catalog import member_identities
+    from tux_access.catalog.products import catalog_rows
+    from tux_access.catalog.bundles import member_identities
     rows = [dict(row) for row in catalog_rows(payload)]
     members = {member['upid']: member for row in rows for member in member_identities(row)}
     eligible = {artifact.upid for artifact in artifacts

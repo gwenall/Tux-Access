@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from wine_display import DisplayError, ensure_display, _authority, _cookie, _slot
+from tux_access.installation.wine.display import DisplayError, ensure_display, _authority, _cookie, _slot
 
 
 class Child:
@@ -33,8 +33,8 @@ class Child:
 class ExistingDisplayTests(unittest.TestCase):
     def test_existing_desktop_is_preserved_without_spawning_or_reading_runtime(self):
         environment = {'DISPLAY': ':0', 'XAUTHORITY': '/desktop/authority', 'WAYLAND_DISPLAY': 'wayland-0'}
-        with patch('wine_display.subprocess.Popen', side_effect=AssertionError('no new server')), \
-             patch('wine_display._runtime', side_effect=AssertionError('no private runtime needed')):
+        with patch('tux_access.installation.wine.display.subprocess.Popen', side_effect=AssertionError('no new server')), \
+             patch('tux_access.installation.wine.display._runtime', side_effect=AssertionError('no private runtime needed')):
             self.assertEqual(ensure_display(environment), {'DISPLAY': ':0', 'XAUTHORITY': '/desktop/authority'})
 
 
@@ -63,11 +63,11 @@ class ManagedDisplayTests(unittest.TestCase):
         return '987654', self.children[-1].argv
 
     def test_creates_private_authenticated_server_then_reuses_exact_owned_identity(self):
-        with patch('wine_display.shutil.which', return_value='/usr/bin/Xwayland'), \
-             patch('wine_display._slot', return_value=9), \
-             patch('wine_display.subprocess.Popen', side_effect=self.create_child), \
-             patch('wine_display._identity', side_effect=self.identity), \
-             patch('wine_display._authenticated', return_value=True):
+        with patch('tux_access.installation.wine.display.shutil.which', return_value='/usr/bin/Xwayland'), \
+             patch('tux_access.installation.wine.display._slot', return_value=9), \
+             patch('tux_access.installation.wine.display.subprocess.Popen', side_effect=self.create_child), \
+             patch('tux_access.installation.wine.display._identity', side_effect=self.identity), \
+             patch('tux_access.installation.wine.display._authenticated', return_value=True):
             first = ensure_display(self.environment)
             second = ensure_display(self.environment)
         self.assertEqual(first, second)
@@ -86,10 +86,10 @@ class ManagedDisplayTests(unittest.TestCase):
         self.assertEqual(self.children[0].options['stderr'], -3)  # DEVNULL
 
     def test_readiness_timeout_stops_only_new_child_and_removes_its_authority(self):
-        with patch('wine_display.shutil.which', return_value='/usr/bin/Xwayland'), \
-             patch('wine_display._slot', return_value=9), \
-             patch('wine_display.subprocess.Popen', side_effect=self.create_child), \
-             patch('wine_display._authenticated', return_value=False):
+        with patch('tux_access.installation.wine.display.shutil.which', return_value='/usr/bin/Xwayland'), \
+             patch('tux_access.installation.wine.display._slot', return_value=9), \
+             patch('tux_access.installation.wine.display.subprocess.Popen', side_effect=self.create_child), \
+             patch('tux_access.installation.wine.display._authenticated', return_value=False):
             with self.assertRaisesRegex(DisplayError, 'did not become ready'):
                 ensure_display(self.environment, timeout=0.05)
         self.assertTrue(self.children[0].terminated)
@@ -111,11 +111,11 @@ class ManagedDisplayTests(unittest.TestCase):
             if pid == 99999:
                 return 'different', ['/usr/bin/foreign-server']
             return self.identity(pid)
-        with patch('wine_display.shutil.which', return_value='/usr/bin/Xwayland'), \
-             patch('wine_display._slot', return_value=10), \
-             patch('wine_display.subprocess.Popen', side_effect=self.create_child), \
-             patch('wine_display._identity', side_effect=identity), \
-             patch('wine_display._authenticated', return_value=True), \
+        with patch('tux_access.installation.wine.display.shutil.which', return_value='/usr/bin/Xwayland'), \
+             patch('tux_access.installation.wine.display._slot', return_value=10), \
+             patch('tux_access.installation.wine.display.subprocess.Popen', side_effect=self.create_child), \
+             patch('tux_access.installation.wine.display._identity', side_effect=identity), \
+             patch('tux_access.installation.wine.display._authenticated', return_value=True), \
              patch('os.kill', side_effect=AssertionError('must never signal state PID')):
             result = ensure_display(self.environment)
         self.assertEqual(result['DISPLAY'], ':10')
@@ -125,7 +125,7 @@ class ManagedDisplayTests(unittest.TestCase):
     def test_runtime_symlink_and_insecure_permissions_are_rejected(self):
         alias = self.root / 'alias'
         alias.symlink_to(self.root, target_is_directory=True)
-        with patch('wine_display.shutil.which', return_value='/usr/bin/Xwayland'):
+        with patch('tux_access.installation.wine.display.shutil.which', return_value='/usr/bin/Xwayland'):
             with self.assertRaises(DisplayError):
                 ensure_display({**self.environment, 'XDG_RUNTIME_DIR': str(alias)})
             self.root.chmod(0o755)
@@ -134,12 +134,12 @@ class ManagedDisplayTests(unittest.TestCase):
 
     def test_slot_selection_preserves_existing_x11_socket_and_lock(self):
         occupied = {'/tmp/.X11-unix/X9', '/tmp/.X10-lock'}
-        with patch('wine_display.os.path.lexists', side_effect=lambda value: value in occupied):
+        with patch('tux_access.installation.wine.display.os.path.lexists', side_effect=lambda value: value in occupied):
             self.assertEqual(_slot(), 11)
 
     def test_missing_xwayland_has_actionable_prerequisite_and_never_spawns(self):
-        with patch('wine_display.shutil.which', return_value=None), \
-             patch('wine_display.subprocess.Popen', side_effect=AssertionError('must not spawn')):
+        with patch('tux_access.installation.wine.display.shutil.which', return_value=None), \
+             patch('tux_access.installation.wine.display.subprocess.Popen', side_effect=AssertionError('must not spawn')):
             with self.assertRaisesRegex(DisplayError, 'xorg-xwayland'):
                 ensure_display(self.environment)
 
