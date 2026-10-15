@@ -51,13 +51,20 @@ The desktop has been tested in an **Arch Linux QEMU VM**. A normal graphical
 session, a browser and Python 3.10 or newer are required.
 
 ```sh
-sudo pacman -S python python-pip firefox xdg-utils
+sudo pacman -S git python-pipx firefox xdg-utils
 git clone https://forgejo.my-cloud.me/My-Cloud/native-access.git
 cd native-access
-python -m venv .venv
-.venv/bin/python -m pip install ".[desktop]"
-.venv/bin/tuxaccess
+pipx install ".[desktop]"
+pipx ensurepath
 ```
+
+Open a new terminal and run:
+
+```sh
+tuxaccess
+```
+
+Installation uses [pipx](https://pipx.pypa.io/); no manual Python setup is needed.
 
 1. Open **Settings** and choose your download and Wine-prefix locations.
 2. Click **Sign in**, complete NI's page in your browser and allow it to open
@@ -73,8 +80,8 @@ the application shows their location. Existing manual installations are not
 automatically adopted for removal.
 
 Ubuntu and CentOS-family distributions are future targets, **not tested
-platforms**. The Python environment approach is intended to be reusable, but
-system dependencies differ and older releases may lack suitable Qt wheels.
+platforms**. System dependencies differ and older releases may lack suitable
+Qt wheels.
 
 ## Current support
 
@@ -116,13 +123,12 @@ compatible registration accepted by NI's authorization server.
 
 ## Upgrading from Native Access Linux
 
-Tuxaccess was previously named Native Access Linux. For an existing virtual
-environment with the old distribution installed:
+Tuxaccess was previously named Native Access Linux. From your updated source
+checkout, install or replace the current pipx package with:
 
 ```sh
-.venv/bin/python -m pip uninstall native-access-linux-prototype
-.venv/bin/python -m pip install ".[desktop]"
-.venv/bin/tuxaccess
+pipx install --force ".[desktop]"
+tuxaccess
 ```
 
 The old `native-access-linux` command remains an alias. Existing settings,
