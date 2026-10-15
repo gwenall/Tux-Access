@@ -51,20 +51,13 @@ The desktop has been tested in an **Arch Linux QEMU VM**. A normal graphical
 session, a browser and Python 3.10 or newer are required.
 
 ```sh
-sudo pacman -S git python-pipx firefox xdg-utils
+sudo pacman -S python python-pip firefox xdg-utils
 git clone https://forgejo.my-cloud.me/My-Cloud/native-access.git
 cd native-access
-pipx install ".[desktop]"
-pipx ensurepath
+python -m venv .venv
+.venv/bin/python -m pip install ".[desktop]"
+.venv/bin/tuxaccess
 ```
-
-Open a new terminal and run:
-
-```sh
-tuxaccess
-```
-
-Installation uses [pipx](https://pipx.pypa.io/); no manual Python setup is needed.
 
 1. Open **Settings** and choose your download and Wine-prefix locations.
 2. Click **Sign in**, complete NI's page in your browser and allow it to open
@@ -80,8 +73,8 @@ the application shows their location. Existing manual installations are not
 automatically adopted for removal.
 
 Ubuntu and CentOS-family distributions are future targets, **not tested
-platforms**. System dependencies differ and older releases may lack suitable
-Qt wheels.
+platforms**. The Python environment approach is intended to be reusable, but
+system dependencies differ and older releases may lack suitable Qt wheels.
 
 ## Current support
 
@@ -123,12 +116,13 @@ compatible registration accepted by NI's authorization server.
 
 ## Upgrading from Native Access Linux
 
-Tuxaccess was previously named Native Access Linux. From your updated source
-checkout, install or replace the current pipx package with:
+Tuxaccess was previously named Native Access Linux. For an existing virtual
+environment with the old distribution installed:
 
 ```sh
-pipx install --force ".[desktop]"
-tuxaccess
+.venv/bin/python -m pip uninstall native-access-linux-prototype
+.venv/bin/python -m pip install ".[desktop]"
+.venv/bin/tuxaccess
 ```
 
 The old `native-access-linux` command remains an alias. Existing settings,
@@ -160,12 +154,6 @@ python launcher.py --inspect-package package.deb --expected-sha256 HASH
 The reference bridge is a development aid, **not required for Linux browser
 sign-in**. There is no native Linux NI daemon implementation in this project.
 
-Further expansion of our own Wine adapters is held while evaluating reuse of
-[vstenv](https://github.com/dguedry/vstenv). It already covers substantial Wine,
-installer and plugin-bridging infrastructure. Our distinct aim is the independent
-Linux account/catalog workflow. No vstenv implementation has been incorporated
-into this MIT-licensed source tree.
-
 ## Documentation
 
 | Read about | Guide |
@@ -174,5 +162,4 @@ into this MIT-licensed source tree.
 | Installation and compatibility | [Native VST2 installation](docs/native-installation.md) · [Wine management](docs/wine-management.md) · [Kontakt testing](docs/kontakt-wine-testing.md) |
 | Test environment and evidence | [Arch VM verification](docs/arch-vm-verification.md) · [Development verification](docs/verification-0.9.md) · [Tuxaccess 0.9.2](docs/verification-0.9.2.md) |
 | Authentication and interfaces | [Browser sign-in investigation](docs/auth-login-debug.md) · [Protocol findings](docs/protocol-findings.txt) |
-| Existing projects and reuse | [Project comparison](docs/project-comparison.md) · [VM comparison notes](docs/vstenv-vm-testing.md) |
 | Packaging and artwork | [Language and packaging](docs/language-and-packaging.md) · [Sidebar artwork](docs/sidebar-art.md) |
