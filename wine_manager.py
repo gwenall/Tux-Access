@@ -421,7 +421,7 @@ class WineManager:
             else:
                 results.append(Diagnostic('xwayland', 'error', 'Xwayland is required for Wine on this Wayland desktop.', 'Install the Arch xorg-xwayland package.'))
         else:
-            results.append(Diagnostic('display', 'error', 'Wine needs a graphical Linux session.', 'Open Tuxaccess from your desktop.'))
+            results.append(Diagnostic('display', 'error', 'Wine needs a graphical Linux session.', 'Open Tux Access from your desktop.'))
         results.extend(self._bridge_diagnostics())
         return results
 
@@ -695,7 +695,7 @@ class WineManager:
     def launch_kontakt(self):
         item = self.installation_status()
         if item['status'] != 'installed':
-            raise WineError(item.get('message', 'Kontakt is not installed by Tuxaccess'))
+            raise WineError(item.get('message', 'Kontakt is not installed by Tux Access'))
         executable = self.prefix / 'drive_c' / EXE_TARGET
         self._prepare_display()
         return subprocess.Popen([self._wine(), str(executable)], env=self._env(self.prefix),

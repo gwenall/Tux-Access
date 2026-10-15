@@ -87,7 +87,7 @@ def _authenticated(display, cookie):
 def _runtime(environment):
     value = environment.get('XDG_RUNTIME_DIR')
     if not value or not Path(value).is_absolute():
-        raise DisplayError('Wine needs a desktop runtime directory. Open Tuxaccess from your graphical session.')
+        raise DisplayError('Wine needs a desktop runtime directory. Open Tux Access from your graphical session.')
     base = Path(value)
     _owned(base, 'directory')
     for parent in (base, *base.parents):
@@ -95,7 +95,7 @@ def _runtime(environment):
             raise DisplayError('Wine display runtime directory has symlink ancestry')
     wayland = environment.get('WAYLAND_DISPLAY')
     if not wayland:
-        raise DisplayError('Wine needs a graphical Linux session. Open Tuxaccess from your desktop.')
+        raise DisplayError('Wine needs a graphical Linux session. Open Tux Access from your desktop.')
     wayland_path = Path(wayland) if Path(wayland).is_absolute() else base / wayland
     try:
         info = wayland_path.lstat()
