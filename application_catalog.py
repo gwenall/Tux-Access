@@ -2,7 +2,8 @@
 
 These are product identities, not license grants. An application is added only
 when the signed-in account's full-products API supplies its installer metadata.
-Library, expansion and plug-in-only identities are deliberately excluded.
+The Applications view excludes libraries and expansions. Other confirmed bundle
+members can appear in the full catalog when an authorized installer is available.
 """
 
 APPLICATIONS = {
@@ -36,12 +37,14 @@ def expand_catalog(payload, artifacts):
     installed state, activation, edition or standalone runtime compatibility.
     """
     from launcher import catalog_rows
+    from bundle_catalog import member_identities
     rows = [dict(row) for row in catalog_rows(payload)]
+    members = {member['upid']: member for row in rows for member in member_identities(row)}
     eligible = {artifact.upid for artifact in artifacts
-                if artifact.file_type == 'installer' and artifact.upid in APPLICATIONS}
+                if artifact.file_type == 'installer' and (artifact.upid in APPLICATIONS or artifact.upid in members)}
     by_id = {row.get('upid'): row for row in rows if row.get('upid')}
-    for upid in sorted(eligible, key=lambda value: APPLICATIONS[value][0].casefold()):
-        name, kind = APPLICATIONS[upid]
+    for upid in sorted(eligible):
+        name, kind = APPLICATIONS.get(upid, (members.get(upid, {}).get('title', ''), None))
         row = by_id.get(upid)
         if row is None:
             row = {'upid': upid, 'title': name, 'source': 'account-downloads', 'status': 'Account record'}
@@ -49,5 +52,6 @@ def expand_catalog(payload, artifacts):
         elif row.get('title') != name:
             row.setdefault('entitlementTitle', row.get('title', ''))
             row['title'] = name
-        row.update(type=kind, isApplication=True)
+        if kind is not None:
+            row.update(type=kind, isApplication=True)
     return {'products': rows}

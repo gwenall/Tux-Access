@@ -1,4 +1,4 @@
-# Native Access Linux — Python proof of concept 0.9.0 (development)
+# Native Access Linux — Python proof of concept 0.9.1 (development)
 
 An independent MIT-licensed launcher targeting Arch Linux first. The proof of
 concept stays in Python while the interfaces are established and tested. A
@@ -30,6 +30,11 @@ Ubuntu and CentOS-family systems can use the same virtual-environment steps
 with Python 3.10+ and their distribution's desktop libraries. These distributions
 have not yet been tested. Older CentOS releases may lack suitable Qt wheels.
 
+The prototype currently reuses Native Access's observed public OAuth client ID
+and registered redirects. It has no independent NI-issued client registration
+or NI endorsement. A different client ID needs a compatible registration
+accepted by NI's authorization server.
+
 ## What to test on Arch
 1. Start the desktop and click Sign in. Complete NI's authorization page in
    your browser, then allow it to open Native Access Linux. Leave the launcher's
@@ -47,6 +52,11 @@ have not yet been tested. Older CentOS releases may lack suitable Qt wheels.
    Click Install beside a supported product. The launcher selects its verified
    installer, downloads or verifies a cached copy, and installs it using these
    settings. Progress, cancellation and retry appear in the main window.
+   Collections such as Komplete 13 use View products: the embedded collection
+   page lists their confirmed components and individual installation options.
+   An Install button requires both an account-authorized installer and an
+   available backend. Collection membership alone does not authorize downloads.
+   Unsupported products open their inline options with a visible explanation.
 4. Automatic Arch installation supports Phasis and Reaktor 6 Linux VST2 packages,
    and exact Kontakt 8.9.0 / Maschine 2.18.4 Windows artifacts through managed Wine prefixes.
    The launcher prepares required system tools through the system authentication
@@ -129,7 +139,7 @@ The development tree also contains an experimental Massive 1.7 coordinator
 profile and a Controller Editor 2.8.2 profile that is not yet enabled. Their
 original artifact/payload fingerprints and unit checks pass; their real
 Install/Launch/Uninstall cycles remain untested. The current source passes
-196 unit tests on Arch; see [development verification](docs/verification-0.9.md).
+208 unit tests on Arch; see [development verification](docs/verification-0.9.md).
 
 Further adapter expansion is held while evaluating existing compatibility
 infrastructure. [vstenv](https://github.com/dguedry/vstenv), the successor to

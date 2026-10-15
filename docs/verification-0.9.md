@@ -70,3 +70,22 @@ profile creation, archive extraction or unit-test mocks.
 
 Physical audio, controller USB support, DAW integration and legitimate product
 activation remain separate unverified capabilities.
+
+## 0.9.1 collection button fix
+
+Komplete collections now open an embedded component page rather than failing
+through a footer-only Install action. The decoder retains public bundle member
+IDs/titles. Four exact reference collection definitions are included, while
+current account installer metadata remains the download authorization gate.
+Unsupported individual products open visible inline options and an explanation.
+
+All 208 Linux unit tests pass, including six collection UI checks and six
+membership/decoder checks. The 0.9.1 wheel and source distribution build, and
+the installed wheel imports both collection modules and all existing backends.
+
+The deployed Arch GUI reloaded 160 account products and preserved its three
+local installations. Through the visible UI, searching for Komplete 13 showed
+View products; clicking it opened 99 confirmed members. Selecting Massive showed
+an individual Install action and its authorization/backend explanation. Opening
+the collection started no download. This routing check does not qualify a new
+Massive runtime or claim that every collection component can be installed.

@@ -102,6 +102,10 @@ class Launcher(QtWidgets.QMainWindow):
         self._selected_identity = None
         self._settings_page = None
         self._about_page = None
+        self._bundle_page = None
+        self._bundle_product = None
+        self._bundle_rows = []
+        self._bundle_actions = []
         self._settings_controls = []
         self._options_product = None
         self._inline_artifacts = []
@@ -195,7 +199,7 @@ class Launcher(QtWidgets.QMainWindow):
         self.account_status.setWordWrap(True)
         self.account_status.setObjectName('muted')
         navigation.addWidget(self.account_status)
-        version = QtWidgets.QLabel('Python desktop · 0.9.0')
+        version = QtWidgets.QLabel('Python desktop · 0.9.1')
         version.setObjectName('muted')
         navigation.addWidget(version)
         content = QtWidgets.QWidget()
@@ -363,6 +367,157 @@ class Launcher(QtWidgets.QMainWindow):
         if not self._busy and self._retry:
             self._retry()
 
+    def show_bundle(self, product):
+        """Inspect confirmed collection membership without installing a bundle."""
+        self.cancel_uninstall_confirmation(announce=False)
+        self._bundle_product = product
+        if self._bundle_page is None:
+            page = QtWidgets.QWidget()
+            page.setObjectName('bundlePage')
+            layout = QtWidgets.QVBoxLayout(page)
+            layout.setContentsMargins(0, 0, 0, 0)
+            header = QtWidgets.QHBoxLayout()
+            self.bundle_heading = QtWidgets.QLabel()
+            self.bundle_heading.setObjectName('title')
+            self.bundle_heading.setWordWrap(True)
+            header.addWidget(self.bundle_heading, 1)
+            back = QtWidgets.QPushButton('Back to library')
+            back.clicked.connect(lambda: self.set_view(self._view))
+            header.addWidget(back)
+            self.bundle_refresh_button = QtWidgets.QPushButton()
+            self.bundle_refresh_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_BrowserReload))
+            self.bundle_refresh_button.setIconSize(QtCore.QSize(20, 20))
+            self.bundle_refresh_button.setFixedSize(40, 40)
+            self.bundle_refresh_button.setToolTip('Refresh collection')
+            self.bundle_refresh_button.setAccessibleName('Refresh collection')
+            self.bundle_refresh_button.setStyleSheet('padding: 0;')
+            self.bundle_refresh_button.clicked.connect(self.account_catalog)
+            header.addWidget(self.bundle_refresh_button)
+            layout.addLayout(header)
+            self.bundle_explanation = QtWidgets.QLabel()
+            self.bundle_explanation.setWordWrap(True)
+            self.bundle_explanation.setObjectName('muted')
+            layout.addWidget(self.bundle_explanation)
+            self.bundle_notice = QtWidgets.QLabel()
+            self.bundle_notice.setWordWrap(True)
+            layout.addWidget(self.bundle_notice)
+            self.bundle_table = QtWidgets.QTableWidget(0, 5)
+            self.bundle_table.setHorizontalHeaderLabels(['Product', 'Version', 'Type', 'State', 'Actions'])
+            self.bundle_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+            self.bundle_table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+            self.bundle_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+            self.bundle_table.setAlternatingRowColors(True)
+            self.bundle_table.setShowGrid(False)
+            self.bundle_table.verticalHeader().hide()
+            self.bundle_table.verticalHeader().setDefaultSectionSize(64)
+            self.bundle_table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+            self.bundle_table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+            self.bundle_table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.Fixed)
+            self.bundle_table.setColumnWidth(1, 78)
+            self.bundle_table.setColumnWidth(2, 100)
+            self.bundle_table.itemSelectionChanged.connect(self.bundle_details)
+            layout.addWidget(self.bundle_table, 1)
+            self.bundle_detail = QtWidgets.QPlainTextEdit()
+            self.bundle_detail.setReadOnly(True)
+            self.bundle_detail.setMaximumHeight(130)
+            layout.addWidget(self.bundle_detail)
+            self.pages.addWidget(page)
+            self._bundle_page = page
+        self._render_bundle()
+        for button, _ in self.nav_buttons:
+            button.setChecked(False)
+        self.settings_button.setChecked(False)
+        self.about_button.setChecked(False)
+        self.pages.setCurrentWidget(self._bundle_page)
+
+    def _bundle_reason(self, product):
+        from bundle_catalog import is_bundle
+        if is_bundle(product):
+            return self._unsupported_reason(product)
+        if self._installed_locally(product):
+            return 'A local installation is present. Launch is offered only when a qualified application profile can validate it.'
+        if not product.get('bundleInstallerAvailable'):
+            return 'Collection membership is confirmed, but no authorized installer is available in this account’s current metadata. Refresh can check again. Manual options do not grant download access.'
+        if not self._supported(product):
+            return self._unsupported_reason(product)
+        return 'An authorized installer and supported backend are available. Install downloads, verifies and installs this individual product.'
+
+    def _render_bundle(self):
+        if self._bundle_page is None:
+            return
+        from bundle_catalog import bundle_members
+        from bundle_catalog import is_bundle
+        from application_backends import wine_spec
+        selected = self.bundle_table.item(self.bundle_table.currentRow(), 0)
+        selected_key = selected.data(QtCore.Qt.ItemDataRole.UserRole) if selected else None
+        self._bundle_actions = []
+        self._bundle_rows = bundle_members(self._bundle_product, self.products, self.artifacts) if self._bundle_product else []
+        self.bundle_heading.setText(product_values(self._bundle_product)[0] if self._bundle_product else 'Collection')
+        explicit = self._bundle_product is not None and any(key in self._bundle_product for key in ('bundleMembers', 'bundle_members'))
+        source = ('Membership uses explicit bundle metadata supplied with this catalog record' if explicit else
+                  'Membership comes from the NI public catalog snapshot dated 14 October 2026')
+        self.bundle_explanation.setText('This collection has no single application installer. Choose an individual product below. ' +
+                                        source + '; it does not establish download authorization or installation support.')
+        self.bundle_notice.setText(f'{len(self._bundle_rows)} confirmed member products. Install and Launch act on one selected product at a time.' if self._bundle_rows else
+                                   'Confirmed membership is not available in this collection’s current metadata. Refresh may update account installers; unrelated owned products are not substituted.')
+        self.bundle_refresh_button.setEnabled(not self._busy and self._login_banner is None)
+        self.bundle_table.blockSignals(True)
+        self.bundle_table.clearSelection()
+        self.bundle_table.setCurrentCell(-1, -1)
+        self.bundle_table.setRowCount(0)
+        self.bundle_table.setRowCount(len(self._bundle_rows))
+        restored = None
+        for row, member in enumerate(self._bundle_rows):
+            nested_bundle = is_bundle(member)
+            values = list(product_values(member))
+            values[3] = self._product_states.get(self._product_key(member), values[3])
+            for column, value in enumerate(values):
+                item = QtWidgets.QTableWidgetItem(value)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole, self._product_key(member))
+                self.bundle_table.setItem(row, column, item)
+            installed = self._installed_locally(member)
+            launchable = installed and member.get('backend') == 'wine' and wine_spec(self._canonical_local_record(member)) is not None
+            installable = not installed and self._supported(member) and member.get('bundleInstallerAvailable') is True
+            uncertain = values[3] == 'Installation state needs refresh'
+            button = QtWidgets.QPushButton('View products' if nested_bundle else 'Launch' if launchable else 'Install' if installable and not uncertain else 'Show options')
+            button.setObjectName('primary' if launchable or installable else '')
+            button.setEnabled(not self._busy and self._login_banner is None)
+            action = self.show_bundle if nested_bundle else self.launch_wine_product if launchable else self.install_product if installable and not uncertain else self.open_install_options
+            button.clicked.connect(lambda checked=False, p=member, handler=action: handler(p))
+            button.setToolTip(self._bundle_reason(member))
+            container = QtWidgets.QWidget()
+            buttons = QtWidgets.QHBoxLayout(container)
+            buttons.setContentsMargins(8, 4, 8, 4)
+            buttons.addWidget(button)
+            self.bundle_table.setCellWidget(row, 4, container)
+            button.ensurePolished()
+            button.setMinimumWidth(max(108, button.sizeHint().width(), button.fontMetrics().horizontalAdvance(button.text()) + 38))
+            container.setMinimumWidth(button.minimumWidth() + 20)
+            self._bundle_actions.append(button)
+            if self._product_key(member) == selected_key:
+                restored = row
+        self._size_bundle_action_column()
+        self.bundle_table.setColumnHidden(2, self.width() < 1000)
+        self.bundle_table.doItemsLayout()
+        if restored is not None:
+            self.bundle_table.setCurrentCell(restored, 0)
+            self.bundle_table.selectRow(restored)
+        self.bundle_table.blockSignals(False)
+        self.bundle_details()
+        QtCore.QTimer.singleShot(0, self._size_bundle_action_column)
+
+    def _size_bundle_action_column(self):
+        self.bundle_table.setColumnWidth(4, max([148] + [button.minimumWidth() + 24 for button in self._bundle_actions]))
+        self.bundle_table.doItemsLayout()
+
+    def bundle_details(self):
+        row = self.bundle_table.currentRow()
+        if 0 <= row < len(self._bundle_rows):
+            member = self._bundle_rows[row]
+            self.bundle_detail.setPlainText(product_values(member)[0] + '\n' + self._bundle_reason(member))
+        else:
+            self.bundle_detail.setPlainText('Select a member to see its authorization and installation options.')
+
     def show_about(self):
         """Project context inside the main window, without affecting a job."""
         self.cancel_uninstall_confirmation(announce=False)
@@ -375,7 +530,7 @@ class Launcher(QtWidgets.QMainWindow):
             heading.setObjectName('title')
             heading.setWordWrap(True)
             layout.addWidget(heading)
-            version = QtWidgets.QLabel('Version 0.9.0 · Independent community prototype')
+            version = QtWidgets.QLabel('Version 0.9.1 · Independent community prototype')
             version.setObjectName('muted')
             layout.addWidget(version)
             contents = QtWidgets.QWidget()
@@ -545,6 +700,9 @@ class Launcher(QtWidgets.QMainWindow):
         return next((product for product in self.products if self._product_key(product) == key), None)
 
     def _supported(self, product):
+        from bundle_catalog import is_bundle
+        if is_bundle(product):
+            return False
         from install_coordinator import can_install
         return can_install(product, self.settings)
 
@@ -562,6 +720,7 @@ class Launcher(QtWidgets.QMainWindow):
 
     def render(self, *_):
         from application_backends import wine_spec
+        from bundle_catalog import is_bundle
         self.product_actions = []
         query = self.search.text().casefold()
         selected = self.table.item(self.table.currentRow(), 0)
@@ -580,9 +739,12 @@ class Launcher(QtWidgets.QMainWindow):
         self.table.setRowCount(len(rows))
         restored_row = None
         for row, (index, product) in enumerate(rows):
+            bundle = is_bundle(product)
             values = list(product_values(product))
             values[3] = self._product_states.get(self._product_key(product), values[3] or
                                                ('Ready to install' if self._supported(product) else 'Manual workflow'))
+            if bundle:
+                values[3] = 'Collection · choose products'
             for column, value in enumerate(values):
                 item = QtWidgets.QTableWidgetItem(value)
                 item.setData(QtCore.Qt.ItemDataRole.UserRole, index)
@@ -595,12 +757,12 @@ class Launcher(QtWidgets.QMainWindow):
             installed = self._installed_locally(product)
             uncertain = values[3] == 'Installation state needs refresh'
             launchable = installed and product.get('backend') == 'wine' and wine_spec(self._canonical_local_record(product)) is not None
-            button = QtWidgets.QPushButton('Check state' if uncertain else 'Launch' if launchable else 'Installed' if installed else 'Retry' if values[3] in ('Failed', 'Cancelled') else 'Install')
+            button = QtWidgets.QPushButton('View products' if bundle else 'Check state' if uncertain else 'Launch' if launchable else 'Installed' if installed else 'Retry' if values[3] in ('Failed', 'Cancelled') else 'Install')
             button.setObjectName('primary')
-            button.setEnabled(not self._busy and self._login_banner is None and not uncertain and (launchable or not installed))
-            callback = self.launch_wine_product if launchable else self.install_product
+            button.setEnabled(not self._busy and self._login_banner is None and not uncertain and (bundle or launchable or not installed))
+            callback = self.show_bundle if bundle else self.launch_wine_product if launchable else self.install_product
             button.clicked.connect(lambda checked=False, p=product, action=callback: action(p))
-            button.setToolTip('Start the verified local application.' if launchable else
+            button.setToolTip('View the confirmed products in this collection and choose an individual action.' if bundle else 'Start the verified local application.' if launchable else
                               'Download, verify and install this product automatically.' if supported else self._unsupported_reason(product))
             buttons.addWidget(button)
             # Attach before polishing: the inherited main-window font, weight
@@ -634,6 +796,8 @@ class Launcher(QtWidgets.QMainWindow):
         self.table.blockSignals(False)
         if restored_row is not None:
             self.details()
+        if self.pages.currentWidget() == self._bundle_page:
+            self._render_bundle()
         QtCore.QTimer.singleShot(0, self._size_action_column)
 
     def _size_action_column(self):
@@ -648,6 +812,8 @@ class Launcher(QtWidgets.QMainWindow):
         if hasattr(self, 'table'):
             # Type remains in product details; reserve visible space for actions.
             self.table.setColumnHidden(2, self.width() < 1000)
+        if hasattr(self, 'bundle_table'):
+            self.bundle_table.setColumnHidden(2, self.width() < 1000)
 
     @staticmethod
     def _title_key(title):
@@ -689,10 +855,14 @@ class Launcher(QtWidgets.QMainWindow):
                   lambda: {'artifacts': available_artifacts(token), 'product': product}, 'product_artifacts')
 
     def install_product(self, product):
+        from bundle_catalog import is_bundle
+        if is_bundle(product):
+            self.show_bundle(product)
+            return
         if self._busy:
             return
-        if not self._supported(product):
-            self.status.setText(self._unsupported_reason(product))
+        if not self._supported(product) or (product.get('bundleParentUpid') and not product.get('bundleInstallerAvailable')):
+            self.open_install_options(product)
             return
         if not self._require_session():
             return
@@ -722,7 +892,9 @@ class Launcher(QtWidgets.QMainWindow):
         return result
 
     def details(self):
+        from bundle_catalog import is_bundle
         product = self._selected_product()
+        self.product_options_button.setText('View products' if product is not None and is_bundle(product) else 'Installation options')
         self.product_options_button.setEnabled(product is not None and not self._busy and self._login_banner is None)
         removable = self._removal_available(product)
         self.uninstall_button.setEnabled(removable and not self._busy and self._login_banner is None)
@@ -754,13 +926,20 @@ class Launcher(QtWidgets.QMainWindow):
             self.detail.setPlainText('\n'.join(lines))
 
     def _unsupported_reason(self, product):
+        from bundle_catalog import is_bundle
         title = product_values(product)[0]
+        if is_bundle(product):
+            return title + ' is a collection with no single application installer. Choose View products to inspect its confirmed members and install individual supported products.'
         return title + ' installation is not available yet. Supported workflows are Phasis, Reaktor 6, Kontakt 8.9.0, Maschine 2.18.4 and Massive 1.7.0. Advanced tools provides manual downloads and inspection.'
 
     def open_selected_options(self):
+        from bundle_catalog import is_bundle
         product = self._selected_product()
         if product is not None and not self._busy:
-            self.open_install_options(product)
+            if is_bundle(product):
+                self.show_bundle(product)
+            else:
+                self.open_install_options(product)
 
     def open_install_options(self, product):
         if self._busy:
@@ -775,7 +954,7 @@ class Launcher(QtWidgets.QMainWindow):
                 self.table.selectRow(row)
                 break
         self.show_settings(product=product, advanced=True)
-        self.status.setText(self._unsupported_reason(product) if not self._supported(product) else
+        self.status.setText(self._bundle_reason(product) if product.get('bundleParentUpid') else self._unsupported_reason(product) if not self._supported(product) else
                             'Installation options for ' + product_values(product)[0] + '. Downloads alone do not establish activation or installation support.')
         if self._token:
             self.load_inline_installers()
@@ -840,6 +1019,8 @@ class Launcher(QtWidgets.QMainWindow):
         self.account_status.setText('Account not connected')
         self._update_account_button()
         self.set_view('all')
+        self._bundle_product = None
+        self._render_bundle()
         self.status.setText('Signed out. Local installations and settings are retained.')
 
     def _run(self, title, operation, kind, download=False, retry=None):
@@ -851,8 +1032,10 @@ class Launcher(QtWidgets.QMainWindow):
         self._cancel.clear()
         self.retry_button.hide()
         self.status.setText(title)
-        for button in self.actions + self.product_actions:
+        for button in self.actions + self.product_actions + self._bundle_actions:
             button.setEnabled(False)
+        if self._bundle_page is not None:
+            self.bundle_refresh_button.setEnabled(False)
         self.product_options_button.setEnabled(False)
         self.uninstall_button.setEnabled(False)
         self.switch_account_action.setEnabled(False)
@@ -1151,7 +1334,7 @@ class Launcher(QtWidgets.QMainWindow):
         self.sign_in_area.show()
         banner.show()
         banner.finished.connect(lambda result: self._finish_sign_in(banner, result))
-        for button in self.actions + self.product_actions + self._settings_controls:
+        for button in self.actions + self.product_actions + self._bundle_actions + self._settings_controls:
             button.setEnabled(False)
         self.switch_account_action.setEnabled(False)
         self.sign_out_action.setEnabled(False)
@@ -1339,7 +1522,7 @@ class Launcher(QtWidgets.QMainWindow):
             context = QtWidgets.QLabel('Install options · ' + product_values(product)[0])
             context.setStyleSheet('font-size:18px;font-weight:600')
             tools.addWidget(context)
-            reason = QtWidgets.QLabel(self._unsupported_reason(product) if not self._supported(product) else
+            reason = QtWidgets.QLabel(self._bundle_reason(product) if product.get('bundleParentUpid') else self._unsupported_reason(product) if not self._supported(product) else
                                     'Use manual download and inspection for this product. Existing installed files are preserved; NI activation is unverified.')
             reason.setWordWrap(True)
             tools.addWidget(reason)

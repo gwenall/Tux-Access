@@ -136,6 +136,14 @@ def _product(data):
         if wire != 2:
             raise ProtocolError("Invalid platform field")
         product["platforms"].append(value.decode("utf-8"))
+    if 32 in parsed:
+        members = fields(_get(parsed, 32, 2, b''))
+        product['bundleMembers'] = []
+        for wire, value in members.get(1, []):
+            if wire != 2:
+                raise ProtocolError('Invalid bundle member field')
+            member = fields(value)
+            product['bundleMembers'].append({'upid': _text(member, 1), 'title': _text(member, 2)})
     return product
 
 

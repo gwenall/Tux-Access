@@ -521,7 +521,7 @@ class ProductActionTests(unittest.TestCase):
             self.assertIn('Not affiliated with, endorsed by, or supported by Native Instruments.', text)
             self.assertIn('MIT license', text)
             self.assertIn('subject to its own licenses', text)
-            self.assertIn('0.9.0', text)
+            self.assertIn('0.9.1', text)
             self.assertIn('prototype', text.casefold())
             self.assertNotIn('200', text)
             self.assertNotIn('private-token', text)
@@ -645,7 +645,8 @@ class ProductActionTests(unittest.TestCase):
         with patch('install_coordinator.install_product') as installer:
             self.window.product_actions[0].click()
             installer.assert_not_called()
-        self.assertIs(self.window.pages.currentWidget(), self.window.library_page)
+        self.assertIs(self.window.pages.currentWidget(), self.window._settings_page)
+        self.assertIs(self.window._options_product, product)
         self.assertIn('Maschine 3 installation is not available yet', self.window.status.text())
 
     def test_explicit_advanced_options_only_download_selected_artifact(self):

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "native-access-linux-prototype"
-version = "0.9.0"
+version = "0.9.1"
 readme = "README.md"
 description = "Independent native Linux launcher, NI account catalog adapter and NTK interface"
 requires-python = ">=3.10"
@@ -18,10 +18,10 @@ desktop = ["PySide6>=6.8,<7"]
 native-access-linux = "launcher:main"
 
 [tool.setuptools]
-py-modules = ["launcher", "qt_launcher", "sidebar_art", "app_settings", "install_coordinator", "application_catalog", "application_backends", "removal_coordinator", "wine_manager", "wine_display", "kontakt_890_plan", "maschine_manager", "maschine_2184_plan", "ni_application_manager", "massive_manager", "massive_170_plan", "controller_editor_manager", "controller_282_plan", "oauth_login", "oauth_browser", "oauth_callback", "arch_package", "ntk_protocol", "schema_codec", "ntk_schema_data", "account_auth", "auth_transport", "account_api", "account_profile", "download_catalog", "download_manager", "package_inspection"]
+py-modules = ["launcher", "qt_launcher", "sidebar_art", "app_settings", "install_coordinator", "application_catalog", "bundle_catalog", "bundle_catalog_data", "application_backends", "removal_coordinator", "wine_manager", "wine_display", "kontakt_890_plan", "maschine_manager", "maschine_2184_plan", "ni_application_manager", "massive_manager", "massive_170_plan", "controller_editor_manager", "controller_282_plan", "oauth_login", "oauth_browser", "oauth_callback", "arch_package", "ntk_protocol", "schema_codec", "ntk_schema_data", "account_auth", "auth_transport", "account_api", "account_profile", "download_catalog", "download_manager", "package_inspection"]
 
 [tool.setuptools.data-files]
 "share/native-access-linux" = ["README.md", "ntk_readonly.proto"]
-"share/native-access-linux/docs" = ["docs/native-installation.md", "docs/ui-workflow.md", "docs/sidebar-art.md", "docs/wine-management.md", "docs/maschine-wine-management.md", "docs/massive-wine-management.md", "docs/controller-editor-wine-management.md", "docs/language-and-packaging.md", "docs/project-comparison.md", "docs/vstenv-vm-testing.md", "docs/kontakt-wine-testing.md", "docs/verification-0.5.md", "docs/verification-0.6.md", "docs/verification-0.6.1.md", "docs/verification-0.7.md", "docs/verification-0.9.md", "docs/arch-vm-verification.md", "docs/auth-login-debug.md"]
+"share/native-access-linux/docs" = ["docs/native-installation.md", "docs/ui-workflow.md", "docs/bundle-workflow.md", "docs/sidebar-art.md", "docs/wine-management.md", "docs/maschine-wine-management.md", "docs/massive-wine-management.md", "docs/controller-editor-wine-management.md", "docs/language-and-packaging.md", "docs/project-comparison.md", "docs/vstenv-vm-testing.md", "docs/kontakt-wine-testing.md", "docs/verification-0.5.md", "docs/verification-0.6.md", "docs/verification-0.6.1.md", "docs/verification-0.7.md", "docs/verification-0.9.md", "docs/arch-vm-verification.md", "docs/auth-login-debug.md"]
 "share/native-access-linux/tools" = ["tools/prepare_arch_compat.sh", "tools/vst_dsp_probe.py"]
 "share/native-access-linux/assets/tux" = ["assets/tux/tux-flying-v-guitar-headphones.png", "assets/tux/tux-dj-turntables-headphones.png", "assets/tux/tux-violin-bow-tie.png", "assets/tux/tux-keyboard-player.png", "assets/tux/tux-saxophone-sunglasses.png", "assets/tux/tux-drum-kit.png", "assets/tux/tux-flying-v-guitar.png", "assets/tux/tux-home-music-studio.png", "assets/tux/tux-acoustic-guitar-headphones.png", "assets/tux/tux-flute-headphones.png", "assets/tux/tux-clarinet-headphones.png", "assets/tux/tux-cello-headphones.png", "assets/tux/tux-bass-guitar-headphones.png", "assets/tux/tux-singer-microphone.png"]
